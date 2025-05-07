@@ -1,0 +1,15 @@
+{
+    "python.pythonPath": "env/Scripts/python.exe",
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "terminal.integrated.profiles.windows": {
+        "PowerShell": {
+            "source": "PowerShell",
+            "icon": "terminal-powershell",
+            "args": [
+                "-noexit",
+                "-command",
+                "& 'env\\Scripts\\Activate.ps1'"
+            ]
+        }
+    }
+}
