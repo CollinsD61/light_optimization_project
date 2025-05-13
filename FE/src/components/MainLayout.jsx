@@ -45,7 +45,7 @@ const MainLayout = () => {
     return (
         <div className="flex">
             <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
-            <div className={`${collapsed ? 'ml-20' : 'ml-64'} w-full min-h-screen bg-gray-100 dark:bg-gray-900 dark:text-white transition-all duration-300`}>
+            <div className={`${collapsed ? 'ml-16' : 'ml-60'} w-full min-h-screen bg-gray-100 dark:bg-gray-900 dark:text-white transition-all duration-300`}>
 
                 <div className="flex justify-between items-center px-6 py-4 bg-white dark:bg-gray-800 shadow-sm">
                     <h1 className="text-xl font-semibold">{getPageTitle()}</h1>

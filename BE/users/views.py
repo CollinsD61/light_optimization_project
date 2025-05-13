@@ -22,7 +22,8 @@ def login_user(request):
     logger.info("Login API CALLED")  # ✅ Thêm dòng này
     username = request.data.get('email')
     password = request.data.get('password')
-    user = authenticate(username=username, password=password)
+    user = authenticate(request, email=username, password=password)
+
     if user is not None:
         refresh = RefreshToken.for_user(user)
         return Response({

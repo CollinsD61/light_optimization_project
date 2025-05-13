@@ -1,7 +1,8 @@
 import axios from 'axios';
 
-//const BASE_URL = 'http://192.168.1.162:8000'; // đúng IP máy đang chạy BE
-const BASE_URL = 'http://10.45.153.76:8000';
+const BASE_URL = 'http://192.168.1.162:8000'; // đúng IP máy đang chạy BE
+//const BASE_URL = 'http://10.45.153.76:8000';
+
 export const loginUser = async (email, password) => {
     try {
         console.log("GỬI LOGIN:", email, password);
@@ -50,6 +51,7 @@ export const confirmPasswordReset = async (token, newPassword) => {
 
 export const fetchSensorData = () => {
     const token = localStorage.getItem('access_token'); // Lấy access token từ localStorage
+    console.log("Token:", token);  // Xem token trong console
     return axios.get(`${BASE_URL}/api/sensor-data/`, {
         headers: {
             Authorization: `Bearer ${token}`, // Thêm header Authorization với token

@@ -1,6 +1,6 @@
 from pathlib import Path
 from datetime import timedelta
-
+import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-66jro-01_#xah@3os$^6e-x%b4$qyw%r+o*)w78bg9sbl@m2fj'
@@ -60,7 +60,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'BE.wsgi.application'
 
-DATABASES = {
+"""DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'sensors',
@@ -70,6 +70,22 @@ DATABASES = {
         'PORT': '5432',
     }
 }
+"""
+
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv("DATABASE_NAME", "sensors"),
+        'USER': os.getenv("DATABASE_USER", "postgres"),
+        'PASSWORD': os.getenv("DATABASE_PASSWORD", "dohoang"),
+        'HOST': os.getenv("DATABASE_HOST", "db"),  # <-- Phải là 'db' nếu chạy trong Docker Compose
+        'PORT': os.getenv("DATABASE_PORT", "5432"),
+    }
+}
+
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -79,6 +95,9 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 AUTH_USER_MODEL = 'users.CustomUser'
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'

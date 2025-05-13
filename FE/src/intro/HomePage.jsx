@@ -84,10 +84,10 @@ export default function HomePage() {
             ${isScrolled ? 'bg-white text-black' : 'bg-black/60 text-white'}`}>
                     <div className="container mx-auto flex justify-between items-center">
                         <div className="flex items-center">
-                            <img src="/logo.png" alt="Light Optimization Logo" className="w-10 h-10 rounded-full" />
+
                             <span className={`ml-3 text-xl font-bold transition-colors duration-300 
                         ${isScrolled ? 'text-black' : 'text-white'}`}>
-                                Light Optimization
+                                Light Optimizationsss
                             </span>
                         </div>
 

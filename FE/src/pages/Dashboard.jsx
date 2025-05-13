@@ -4,6 +4,7 @@ import {
     LineChart, Line, XAxis, YAxis, CartesianGrid,
     Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
+
 import { fetchSensorData } from '../api';
 import { saveAs } from 'file-saver';
 import Papa from 'papaparse';
@@ -92,9 +93,10 @@ const Dashboard = () => {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis
                         dataKey="timestamp"
-                        tickFormatter={(t) => new Date(t).toLocaleTimeString()}
-                        minTickGap={20}
+                        tickFormatter={(t) => new Date(t).toLocaleTimeString().substring(0, 5)}
+                        minTickGap={10}
                     />
+
                     <YAxis />
                     <Tooltip labelFormatter={(t) => new Date(t).toLocaleString()} />
                     <Legend />

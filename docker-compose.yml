@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: sensors
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: dohoang
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  backend:
+    build:
+      context: ./BE
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    networks:
+      - backend
+
+  migrate:
+    build:
+      context: ./BE
+    depends_on:
+      - db
+    command: python manage.py migrate --noinput
+    env_file:
+      - ./BE/.env
+    networks:
+      - backend
+
+  frontend:
+    build:
+      context: ./FE
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    command: npm run dev -- --host 0.0.0.0
+    networks:
+      - backend
+
+volumes:
+  postgres_data:
+
+
+networks:
+  backend:
+    driver: bridge
