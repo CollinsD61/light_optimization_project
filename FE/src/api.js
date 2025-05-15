@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://192.168.1.162:8000'; // đúng IP máy đang chạy BE
+const BASE_URL = 'http://222.255.238.187:8000'; // đúng IP máy đang chạy BE
 //const BASE_URL = 'http://10.45.153.76:8000';
 
 export const loginUser = async (email, password) => {
