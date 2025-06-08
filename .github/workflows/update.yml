@@ -40,7 +40,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      # 4. Snyk Scan (FE và BE source)
+      # 4. Snyk Scan (FE và BE)
       - name: Install Snyk CLI
         run: npm install -g snyk
 
@@ -49,8 +49,13 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
           rm -f package-lock.json
-          snyk test || true 
+          snyk test || true
         working-directory: FE
+
+      # ---- Cài BE dependencies trước khi quét Snyk BE! ----
+      - name: Install BE dependencies
+        run: pip install -r requirements.txt
+        working-directory: BE
 
       - name: Snyk test (BE)
         env:
@@ -107,30 +112,25 @@ jobs:
         run: python test.py
         working-directory: selenium
 
-      # 10. Install BE dependencies (local, nếu cần)
-      - name: Install BE dependencies
-        run: pip install -r requirements.txt
-        working-directory: BE
-
-      # 11. Setup SSH key
+      # 10. Setup SSH key
       - name: Setup SSH key
         uses: webfactory/ssh-agent@v0.8.0
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
-      # 12. Prepare project folder on VPS
+      # 11. Prepare project folder on VPS
       - name: Prepare project folder on VPS
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /root/web_project"
 
-      # 13. Rsync code lên VPS (bỏ qua venv)
+      # 12. Rsync code lên VPS (bỏ qua venv)
       - name: Copy codebase to VPS via rsync (ignore venv)
         run: |
           rsync -avz --delete --exclude 'venv' \
             -e "ssh -o StrictHostKeyChecking=no" \
             ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/root/web_project/
 
-      # 14. SSH and deploy Docker Compose
+      # 13. SSH and deploy Docker Compose
       - name: SSH and deploy Docker Compose
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
