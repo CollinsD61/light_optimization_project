@@ -6,7 +6,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-66jro-01_#xah@3os$^6e-x%b4$qyw%r+o*)w78bg9sbl@m2fj'
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+#ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['lightoptimization.io.vn', 'www.lightoptimization.io.vn', 'localhost', '127.0.0.1']
+
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -28,7 +31,13 @@ INSTALLED_APPS = [
 """CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # React localhost
 ]"""
-CORS_ALLOW_ALL_ORIGINS = True
+#CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = [
+    "https://lightoptimization.io.vn", # Tên miền frontend của bạn
+    "http://localhost:5173",          # Vẫn giữ để phát triển ở local
+    "http://127.0.0.1:5173",
+]
+
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  
@@ -110,7 +119,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 
-GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID' # Thay bằng Client ID thật từ Google Console cloud
+GOOGLE_CLIENT_ID = '1035731953101-ubmukhc15mg1o4uu0vaq6aib5jnjqbte.apps.googleusercontent.com' # Thay bằng Client ID thật từ Google Console cloud
 
 ### Nếu bạn dùng credentials trong frontend fetch (cookies, auth header) ###
 CORS_ALLOW_CREDENTIALS = True
