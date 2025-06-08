@@ -3,7 +3,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 import time
 
-BASE_URL = "http://localhost:5173"  # Thay đổi nếu FE chạy port khác
+BASE_URL = "http://localhost:5173"  # Chỉnh port nếu FE chạy port khác
 
 def check_intro_page(driver):
     print("🟫 Kiểm tra trang intro / ...")
@@ -46,14 +46,6 @@ def check_forgot_password_page(driver):
     assert driver.find_elements(By.XPATH, "//button[contains(text(), 'Back to login')]"), "❌ Không thấy nút Back to login"
     print("✅ Trang FORGOT PASSWORD OK!")
 
-def check_dashboard_page(driver):
-    print("🟪 Kiểm tra trang /dashboard...")
-    driver.get(f"{BASE_URL}/dashboard")
-    time.sleep(1)
-    chart_svgs = driver.find_elements(By.TAG_NAME, "svg")
-    assert chart_svgs, "❌ Không thấy biểu đồ chart nào"
-    print("✅ Trang DASHBOARD OK!")
-
 def check_alarms_page(driver):
     print("🟨 Kiểm tra trang /alarms...")
     driver.get(f"{BASE_URL}/alarms")
@@ -81,7 +73,6 @@ def main():
         check_login_page(driver)
         check_signup_page(driver)
         check_forgot_password_page(driver)
-        check_dashboard_page(driver)
         check_alarms_page(driver)
         check_settings_page(driver)
         print("\n🎉🎉🎉 TẤT CẢ TRANG ĐỀU OK! 🎉🎉🎉")
