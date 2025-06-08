@@ -14,12 +14,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Setup Node cho FE
+      # 2. Setup Node.js cho FE
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
+      # 3. Install FE dependencies
       - name: Install FE dependencies
         run: npm install
         working-directory: FE
@@ -32,7 +33,7 @@ jobs:
         run: npm run build
         working-directory: FE
 
-      # 3. SonarCloud Scan 
+      # 4. SonarCloud Scan 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v2
         with:
@@ -40,7 +41,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      # 4. Snyk Scan (FE và BE)
+      # 5. Snyk quét source (FE)
       - name: Install Snyk CLI
         run: npm install -g snyk
 
@@ -52,37 +53,37 @@ jobs:
           snyk test || true
         working-directory: FE
 
-      # ---- Cài BE dependencies trước khi quét Snyk BE! ----
+      # 6. Cài BE dependencies trước khi quét Snyk BE!
       - name: Install BE dependencies
         run: pip install -r requirements.txt
         working-directory: BE
 
+      # 7. Snyk test (BE)
       - name: Snyk test (BE)
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: snyk test || true
         working-directory: BE
 
-      # 5. Build Docker image cho FE & BE
+      # 8. Build Docker image FE & BE
       - name: Build FE Docker image
         run: docker build -t fe-app:ci-latest ./FE
 
       - name: Build BE Docker image
         run: docker build -t be-app:ci-latest ./BE
 
-      # 6. Snyk Container scan image FE
+      # 9. Snyk quét image FE & BE
       - name: Snyk container scan FE image
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: snyk container test fe-app:ci-latest || true
 
-      # 7. Snyk Container scan image BE
       - name: Snyk container scan BE image
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: snyk container test be-app:ci-latest || true
 
-      # 8. Trivy scan FE & BE Docker image
+      # 10. Trivy quét image FE & BE
       - name: Install Trivy
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
@@ -93,16 +94,27 @@ jobs:
       - name: Trivy scan BE image
         run: trivy image --severity CRITICAL,HIGH be-app:ci-latest
 
-      # 9. Selenium UI test
+      # 11. Selenium UI test (build & start FE server)
+      - name: Start FE server (Vite dev)
+        run: nohup npm run dev -- --host 0.0.0.0 &
+        working-directory: FE
+
+      - name: Wait FE server ready
+        run: |
+          for i in {1..10}; do
+            curl -sSf http://localhost:5173/ && exit 0
+            echo "Waiting for FE server..."
+            sleep 2
+          done
+          echo "FE server did not start in time!" && exit 1
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Install Selenium and requirements
-        run: |
-          pip install selenium
-          pip install -r requirements.txt || true
+      - name: Install Selenium (no requirements.txt)
+        run: pip install selenium
         working-directory: selenium
 
       - name: Setup Chrome
@@ -112,25 +124,25 @@ jobs:
         run: python test.py
         working-directory: selenium
 
-      # 10. Setup SSH key
+      # 12. Setup SSH key
       - name: Setup SSH key
         uses: webfactory/ssh-agent@v0.8.0
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
-      # 11. Prepare project folder on VPS
+      # 13. Prepare project folder on VPS
       - name: Prepare project folder on VPS
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /root/web_project"
 
-      # 12. Rsync code lên VPS (bỏ qua venv)
+      # 14. Rsync code lên VPS (bỏ qua venv)
       - name: Copy codebase to VPS via rsync (ignore venv)
         run: |
           rsync -avz --delete --exclude 'venv' \
             -e "ssh -o StrictHostKeyChecking=no" \
             ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/root/web_project/
 
-      # 13. SSH and deploy Docker Compose
+      # 15. SSH and deploy Docker Compose
       - name: SSH and deploy Docker Compose
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
