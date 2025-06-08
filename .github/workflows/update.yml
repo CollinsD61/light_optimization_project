@@ -22,15 +22,15 @@ jobs:
 
       - name: Install FE dependencies
         run: npm install
-        working-directory: web_project/FE
+        working-directory: FE
 
       - name: Lint FE
         run: npm run lint || true
-        working-directory: web_project/FE
+        working-directory: FE
 
       - name: Build FE
         run: npm run build
-        working-directory: web_project/FE
+        working-directory: FE
 
       # 3. SonarCloud Scan (projectBaseDir là web_project, đã có sonar-project.properties)
       - name: SonarCloud Scan
@@ -48,13 +48,13 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: snyk test
-        working-directory: web_project/FE
+        working-directory: FE
 
       - name: Snyk test (BE)
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: snyk test
-        working-directory: web_project/BE
+        working-directory: BE
 
       # 5. Selenium UI test 
       - name: Setup Python
@@ -72,12 +72,12 @@ jobs:
 
       - name: Run Selenium Python UI tests
         run: python test.py
-        working-directory: web_project/selenium
+        working-directory: selenium
 
       # 6. Install BE dependencies
       - name: Install BE dependencies
         run: pip install -r requirements.txt
-        working-directory: web_project/BE
+        working-directory: BE
 
       # 7. Setup SSH key
       - name: Setup SSH key
