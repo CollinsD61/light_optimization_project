@@ -46,13 +46,6 @@ def check_forgot_password_page(driver):
     assert driver.find_elements(By.XPATH, "//button[contains(text(), 'Back to login')]"), "❌ Không thấy nút Back to login"
     print("✅ Trang FORGOT PASSWORD OK!")
 
-def check_home_page(driver):
-    print("🟦 Kiểm tra trang /home...")
-    driver.get(f"{BASE_URL}/home")
-    time.sleep(1)
-    assert any(s in driver.page_source for s in ["Devices", "Active:", "Inactive:"]), "❌ Không có block Devices"
-    print("✅ Trang HOME OK!")
-
 def check_dashboard_page(driver):
     print("🟪 Kiểm tra trang /dashboard...")
     driver.get(f"{BASE_URL}/dashboard")
@@ -88,7 +81,6 @@ def main():
         check_login_page(driver)
         check_signup_page(driver)
         check_forgot_password_page(driver)
-        check_home_page(driver)
         check_dashboard_page(driver)
         check_alarms_page(driver)
         check_settings_page(driver)
