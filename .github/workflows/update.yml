@@ -151,3 +151,11 @@ jobs:
             docker compose up -d --build &&
             docker image prune -af
           "
+      # 16. SSH vào VPS và migrate DB cho Django backend
+      - name: SSH và migrate Django DB trên VPS
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
+            cd /root/web_project &&
+            docker compose exec backend python manage.py makemigrations users &&
+            docker compose exec backend python manage.py migrate
+          "
