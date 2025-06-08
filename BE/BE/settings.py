@@ -7,7 +7,7 @@ SECRET_KEY = 'django-insecure-66jro-01_#xah@3os$^6e-x%b4$qyw%r+o*)w78bg9sbl@m2fj
 DEBUG = True
 
 #ALLOWED_HOSTS = ['*']
-ALLOWED_HOSTS = ['lightoptimization.io.vn', 'www.lightoptimization.io.vn', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['lightoptimization.io.vn','api.lightoptimization.io.vn', 'www.lightoptimization.io.vn', 'localhost', '127.0.0.1']
 
 
 
