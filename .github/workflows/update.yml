@@ -3,7 +3,7 @@ name: Deploy to VPS
 on:
   push:
     branches:
-      - master
+      - master   # Đổi thành branch bạn muốn auto deploy, ví dụ: main nếu bạn dùng main
 
 jobs:
   build-and-deploy:
@@ -18,16 +18,20 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
-      - name: Copy code to VPS via rsync
+      - name: Prepare project folder on VPS
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@222.255.238.187 "mkdir -p /root/web_project"
+
+      - name: Copy entire codebase to VPS via rsync
         run: |
           rsync -avz --delete \
             -e "ssh -o StrictHostKeyChecking=no" \
-            ./ ${{ secrets.SSH_USER }}@222.255.238.187:/root/web_project/FE/
-      
+            ./ ${{ secrets.SSH_USER }}@222.255.238.187:/root/web_project/
+
       - name: SSH and deploy Docker Compose
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@222.255.238.187 "
-            cd /root/web_project/FE &&
+            cd /root/web_project &&
             docker compose down || true &&
             docker compose up -d --build
           "
