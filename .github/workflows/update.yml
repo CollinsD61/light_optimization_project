@@ -3,37 +3,106 @@ name: Deploy to VPS
 on:
   push:
     branches:
-      - master   # Đổi thành branch bạn muốn auto deploy, ví dụ: main nếu bạn dùng main
+      - master
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 2. Setup Node cho FE
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install FE dependencies
+        run: npm install
+        working-directory: web_project/FE
+
+      - name: Lint FE
+        run: npm run lint || true
+        working-directory: web_project/FE
+
+      - name: Build FE
+        run: npm run build
+        working-directory: web_project/FE
+
+      # 3. SonarCloud Scan (projectBaseDir là web_project, đã có sonar-project.properties)
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v2
+        with:
+          projectBaseDir: web_project
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      # 4. Snyk Scan (FE và BE)
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      - name: Snyk test (FE)
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk test
+        working-directory: web_project/FE
+
+      - name: Snyk test (BE)
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk test
+        working-directory: web_project/BE
+
+      # 5. Selenium UI test 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Selenium and requirements
+        run: |
+          pip install selenium
+          pip install -r requirements.txt || true
+
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Run Selenium Python UI tests
+        run: python test.py
+        working-directory: web_project/selenium
+
+      # 6. Install BE dependencies
+      - name: Install BE dependencies
+        run: pip install -r requirements.txt
+        working-directory: web_project/BE
+
+      # 7. Setup SSH key
       - name: Setup SSH key
         uses: webfactory/ssh-agent@v0.8.0
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
+      # 8. Prepare project folder on VPS
       - name: Prepare project folder on VPS
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@222.255.238.187 "mkdir -p /root/web_project"
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /root/web_project"
 
-      - name: Copy entire codebase to VPS via rsync
+      # 9. Rsync code lên VPS (bỏ qua venv)
+      - name: Copy codebase to VPS via rsync (ignore venv)
         run: |
-          rsync -avz --delete \
+          rsync -avz --delete --exclude 'venv' \
             -e "ssh -o StrictHostKeyChecking=no" \
-            ./ ${{ secrets.SSH_USER }}@222.255.238.187:/root/web_project/
+            ./web_project/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/root/web_project/
 
+      # 10. SSH and deploy Docker Compose
       - name: SSH and deploy Docker Compose
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@222.255.238.187 "
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
             cd /root/web_project &&
             docker compose down || true &&
-            docker compose up -d --build
+            docker compose up -d --build &&
             docker image prune -af
-
           "
