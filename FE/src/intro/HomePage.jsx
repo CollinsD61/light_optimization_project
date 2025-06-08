@@ -105,14 +105,14 @@ Nghiên cứu này chứng minh tiềm năng của công nghệ cảm biến hi�
             />
 
             <div className="relative z-10">
-                {/* Navigation Bar */}
+                {/* Navigation Bar - Cải thiện với hiệu ứng hover */}
                 <nav className={`w-full py-4 px-4 md:px-6 fixed top-0 z-20 shadow-md backdrop-blur transition-all duration-300 
                     ${isScrolled ? 'bg-white text-black' : 'bg-black/60 text-white'}`}>
                     <div className="container mx-auto flex justify-between items-center">
                         <div className="flex items-center">
                             <span className={`ml-2 md:ml-3 text-lg md:text-xl font-bold transition-colors duration-300 
                                 ${isScrolled ? 'text-black' : 'text-white'}`}>
-                                Light Optimizationsss
+                                Light Optimizations
                             </span>
                         </div>
                         {/* Nút nav mobile */}
@@ -127,18 +127,40 @@ Nghiên cứu này chứng minh tiềm năng của công nghệ cảm biến hi�
                         <div className={`flex-col md:flex md:flex-row md:items-center md:static absolute top-full left-0 w-full md:w-auto transition-all duration-300 bg-white md:bg-transparent text-black md:text-inherit shadow md:shadow-none 
                             ${navOpen ? "flex" : "hidden"} md:flex`}>
                             <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-8 mr-0 md:mr-8 px-4 md:px-0 py-4 md:py-0">
-                                <a href="#about" onClick={(e) => { e.preventDefault(); scrollToSection(aboutRef); setNavOpen(false); }} className="hover:text-gray-500 transition-colors duration-300">About Us</a>
-                                <a href="#projects" onClick={(e) => { e.preventDefault(); scrollToSection(projectsRef); setNavOpen(false); }} className="hover:text-gray-500 transition-colors duration-300">Our Projects</a>
-                                <a href="#team" onClick={(e) => { e.preventDefault(); scrollToSection(teamRef); setNavOpen(false); }} className="hover:text-gray-500 transition-colors duration-300">Team</a>
-                                <a href="#contact" onClick={(e) => { e.preventDefault(); scrollToSection(contactRef); setNavOpen(false); }} className="hover:text-gray-500 transition-colors duration-300">Contact Us</a>
+                                <a href="#about" 
+                                   onClick={(e) => { e.preventDefault(); scrollToSection(aboutRef); setNavOpen(false); }} 
+                                   className="relative group overflow-hidden py-1">
+                                    <span className="relative z-10 font-medium transition-colors duration-300 group-hover:text-blue-500 dark:group-hover:text-blue-400">About Us</span>
+                                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
+                                </a>
+                                <a href="#projects" 
+                                   onClick={(e) => { e.preventDefault(); scrollToSection(projectsRef); setNavOpen(false); }} 
+                                   className="relative group overflow-hidden py-1">
+                                    <span className="relative z-10 font-medium transition-colors duration-300 group-hover:text-blue-500 dark:group-hover:text-blue-400">Our Projects</span>
+                                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
+                                </a>
+                                <a href="#team" 
+                                   onClick={(e) => { e.preventDefault(); scrollToSection(teamRef); setNavOpen(false); }} 
+                                   className="relative group overflow-hidden py-1">
+                                    <span className="relative z-10 font-medium transition-colors duration-300 group-hover:text-blue-500 dark:group-hover:text-blue-400">Team</span>
+                                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
+                                </a>
+                                <a href="#contact" 
+                                   onClick={(e) => { e.preventDefault(); scrollToSection(contactRef); setNavOpen(false); }} 
+                                   className="relative group overflow-hidden py-1">
+                                    <span className="relative z-10 font-medium transition-colors duration-300 group-hover:text-blue-500 dark:group-hover:text-blue-400">Contact Us</span>
+                                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
+                                </a>
                             </div>
                             <button
                                 onClick={() => { handleSignInClick(); setNavOpen(false); }}
-                                className={`mt-2 md:mt-0 border rounded px-4 py-1 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-opacity-50
-                                ${isScrolled ? 'text-black border-black hover:bg-black hover:text-white focus:ring-black'
-                                    : 'text-white md:text-white border-white md:border-white hover:bg-white hover:text-black focus:ring-white md:ml-0 ml-4'}`}
+                                className={`mt-2 md:mt-0 border rounded-full px-6 py-2 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-opacity-50 relative overflow-hidden group
+                                    ${isScrolled 
+                                        ? 'text-black border-black hover:text-white focus:ring-black' 
+                                        : 'text-white md:text-white border-white md:border-white hover:text-black focus:ring-white md:ml-0 ml-4'}`}
                             >
-                                Log In
+                                <span className={`absolute inset-0 ${isScrolled ? 'bg-black' : 'bg-white'} w-0 transition-all duration-300 ease-out group-hover:w-full`}></span>
+                                <span className="relative z-10">Log In</span>
                             </button>
                         </div>
                     </div>
@@ -865,7 +887,7 @@ Nghiên cứu này chứng minh tiềm năng của công nghệ cảm biến hi�
                                         <span key={idx} className="px-4 py-1.5 bg-gray-100 text-gray-800 text-sm rounded-full border-2 border-gray-200 shadow-sm hover:bg-gray-200 transition-all flex items-center">
                                             {keyword === "AI" && (
                                                 <svg className="w-4 h-4 mr-1.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2zM9 9h6v6H9V9z"></path>
                                                 </svg>
                                             )}
                                             {keyword === "Máy học" && (
@@ -926,12 +948,12 @@ Nghiên cứu này chứng minh tiềm năng của công nghệ cảm biến hi�
                                 <div className="flex space-x-3">
                                     <button className="p-2 rounded-full hover:bg-gray-100 transition-colors">
                                         <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H17m-10 0H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2z"></path>
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H17m-10 0H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2z"></path>
                                         </svg>
                                     </button>
                                     <button className="p-2 rounded-full hover:bg-gray-100 transition-colors">
                                         <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
                                         </svg>
                                     </button>
                                 </div>
