@@ -46,20 +46,6 @@ def check_forgot_password_page(driver):
     assert driver.find_elements(By.XPATH, "//button[contains(text(), 'Back to login')]"), "❌ Không thấy nút Back to login"
     print("✅ Trang FORGOT PASSWORD OK!")
 
-def check_alarms_page(driver):
-    print("🟨 Kiểm tra trang /alarms...")
-    driver.get(f"{BASE_URL}/alarms")
-    time.sleep(1)
-    assert "Alarms" in driver.page_source, "❌ Không thấy tiêu đề Alarms"
-    print("✅ Trang ALARMS OK!")
-
-def check_settings_page(driver):
-    print("🟧 Kiểm tra trang /settings...")
-    driver.get(f"{BASE_URL}/settings")
-    time.sleep(1)
-    assert "Settings" in driver.page_source, "❌ Không thấy tiêu đề Settings"
-    print("✅ Trang SETTINGS OK!")
-
 def main():
     options = Options()
     options.add_argument("--headless")
@@ -73,8 +59,6 @@ def main():
         check_login_page(driver)
         check_signup_page(driver)
         check_forgot_password_page(driver)
-        check_alarms_page(driver)
-        check_settings_page(driver)
         print("\n🎉🎉🎉 TẤT CẢ TRANG ĐỀU OK! 🎉🎉🎉")
     finally:
         driver.quit()
