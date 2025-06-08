@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export const BASE_URL = 'https://api.lightoptimization.io.vn';  // đúng IP máy đang chạy BE
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.lightoptimization.io.vn'; // đúng IP máy đang chạy BE
 //const BASE_URL = 'http://10.45.153.76:8000';
 
 export const loginUser = async (email, password) => {
