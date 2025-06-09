@@ -148,14 +148,23 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
             cd /root/web_project &&
             
-            # Thêm @headlessui/react vào package.json của FE
+            # Hạ cấp React và ReactDOM xuống phiên bản 18
             cd FE && 
+            sed -i 's/\"react\": \"^19.0.0\"/\"react\": \"^18.2.0\"/g' package.json &&
+            sed -i 's/\"react-dom\": \"^19.0.0\"/\"react-dom\": \"^18.2.0\"/g' package.json &&
+            
+            # Cập nhật các types React tương ứng
+            sed -i 's/\"@types\/react\": \"^19.0.10\"/\"@types\/react\": \"^18.2.48\"/g' package.json &&
+            sed -i 's/\"@types\/react-dom\": \"^19.0.4\"/\"@types\/react-dom\": \"^18.2.19\"/g' package.json &&
+            
+            # Cài đặt headlessUI sau khi đã hạ cấp React
             npm install @headlessui/react @heroicons/react --save &&
             cd .. &&
             
-            # Sau đó build và chạy container
+            # Xóa các container cũ và build lại
             docker compose down || true &&
-            docker compose up -d --build &&
+            docker compose build --no-cache frontend &&
+            docker compose up -d &&
             docker image prune -af
           "
 
@@ -186,4 +195,23 @@ jobs:
             # Kiểm tra log container
             echo '--- Checking container logs ---' &&
             docker compose logs --tail=50 frontend
+          "
+
+      #  bước verification sau khi build
+      - name: Verify React version and headlessUI installation
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
+            cd /root/web_project &&
+            
+            # Kiểm tra phiên bản React trong package.json
+            echo '--- React version in package.json after update ---' &&
+            cat FE/package.json | grep react &&
+            
+            # Kiểm tra headlessUI trong package.json
+            echo '--- HeadlessUI in package.json ---' &&
+            cat FE/package.json | grep headlessui &&
+            
+            # Kiểm tra phiên bản trong container
+            echo '--- React version in container ---' &&
+            docker compose exec frontend cat /app/package.json | grep react
           "
