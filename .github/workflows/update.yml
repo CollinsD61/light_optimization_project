@@ -22,7 +22,14 @@ jobs:
 
       # 3. Install FE dependencies
       - name: Install FE dependencies
-        run: npm install
+        run: |
+          # Hạ cấp React trước khi cài đặt dependencies
+          sed -i 's/\"react\": \"^19.0.0\"/\"react\": \"^18.2.0\"/g' package.json
+          sed -i 's/\"react-dom\": \"^19.0.0\"/\"react-dom\": \"^18.2.0\"/g' package.json
+          sed -i 's/\"@types\/react\": \"^19.0.10\"/\"@types\/react\": \"^18.2.48\"/g' package.json
+          sed -i 's/\"@types\/react-dom\": \"^19.0.4\"/\"@types\/react-dom\": \"^18.2.19\"/g' package.json
+          # Cài đặt dependencies
+          npm install
         working-directory: FE
 
       - name: Lint FE
