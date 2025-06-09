@@ -13,6 +13,9 @@ RUN npm install
 # Copy toàn bộ mã nguồn
 COPY . .
 
+# Thêm dòng này vào trước lệnh npm run build
+RUN npm install @headlessui/react @heroicons/react --save
+
 # Mở cổng đúng với Vite
 EXPOSE 5173
 

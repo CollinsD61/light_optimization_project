@@ -147,8 +147,13 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
             cd /root/web_project &&
-            npm install @headlessui/react &&
-            npm install @heroicons/react &&
+            
+            # Thêm @headlessui/react vào package.json của FE
+            cd FE && 
+            npm install @headlessui/react @heroicons/react --save &&
+            cd .. &&
+            
+            # Sau đó build và chạy container
             docker compose down || true &&
             docker compose up -d --build &&
             docker image prune -af
@@ -162,4 +167,23 @@ jobs:
             sleep 10 &&
             docker compose run --rm backend python manage.py makemigrations &&
             docker compose run --rm backend python manage.py migrate
+          "
+
+      #  kiểm tra lỗi
+      - name: Debug container issues
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
+            cd /root/web_project &&
+            
+            # Kiểm tra cấu trúc thư mục
+            echo '--- Checking directory structure ---' &&
+            ls -la FE &&
+            
+            # Kiểm tra package.json
+            echo '--- Checking package.json ---' &&
+            cat FE/package.json | grep headless &&
+            
+            # Kiểm tra log container
+            echo '--- Checking container logs ---' &&
+            docker compose logs --tail=50 frontend
           "
