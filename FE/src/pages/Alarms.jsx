@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 
-const AlarmsPage = () => {
+const Alarms = () => {
     const [alarms, setAlarms] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedTab, setSelectedTab] = useState('all');
@@ -676,4 +676,4 @@ const AlarmsPage = () => {
     );
 };
 
-export default AlarmsPage;
+export default Alarms;

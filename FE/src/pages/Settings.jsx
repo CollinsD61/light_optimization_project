@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Switch } from '@headlessui/react';
 
-const SettingsPage = () => {
+const Settings = () => {
     // Lấy darkMode từ localStorage
     const [darkMode, setDarkMode] = useState(() => {
         const savedMode = localStorage.getItem('darkMode');
@@ -328,4 +328,4 @@ const SettingsPage = () => {
     );
 };
 
-export default SettingsPage;
+export default Settings;
