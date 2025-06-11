@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Bell, LayoutDashboard, Settings, Menu } from 'lucide-react';
+import { Home, Bell, LayoutDashboard, Settings, Menu, Map } from 'lucide-react';
 import { useState } from 'react';
 
 const Sidebar = ({ collapsed, setCollapsed }) => {
@@ -20,6 +20,9 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
                 </NavLink>
                 <NavLink to="/mainlayout/Dashboard" className={({ isActive }) => isActive ? 'bg-gray-700 rounded px-4 py-2 flex items-center gap-2' : 'px-4 py-2 flex items-center gap-2 hover:bg-blue-700 rounded'}>
                     <LayoutDashboard size={18} /> {!collapsed && 'Dashboard'}
+                </NavLink>
+                <NavLink to="/mainlayout/map" className={({ isActive }) => isActive ? 'bg-gray-700 rounded px-4 py-2 flex items-center gap-2' : 'px-4 py-2 flex items-center gap-2 hover:bg-blue-700 rounded'}>
+                    <Map size={18} /> {!collapsed && 'Bản đồ'}
                 </NavLink>
                 <NavLink to="/mainlayout/alarms" className={({ isActive }) => isActive ? 'bg-gray-700 rounded px-4 py-2 flex items-center gap-2' : 'px-4 py-2 flex items-center gap-2 hover:bg-blue-700 rounded'}>
                     <Bell size={18} /> {!collapsed && 'Alarms'}

@@ -10,6 +10,7 @@ import DashboardPage from './pages/Dashboard';
 import HomePage from './pages/Home';
 import AlarmsPage from './pages/Alarms';
 import SettingsPage from './pages/Settings';
+import SensorMap from './pages/Map';
 
 function App() {
   return (
@@ -27,7 +28,10 @@ function App() {
           <Route path="home" element={<HomePage />} />
           <Route path="alarms" element={<AlarmsPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="map" element={<SensorMap />} />
+          {/* <Route path="map3d" element={<Map3D />} /> */}
         </Route>
+        
       </Routes>
     </BrowserRouter>
   );
