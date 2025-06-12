@@ -7,17 +7,20 @@ WORKDIR /app
 # Copy package.json và lock file
 COPY package*.json ./
 
+# Xóa package-lock.json nếu có để tránh conflict
+RUN rm -f package-lock.json
+
 # Cài đặt dependencies
 RUN npm install
 
 # Copy toàn bộ mã nguồn
 COPY . .
 
-# Thêm dòng này vào trước lệnh npm run build
-RUN npm install @headlessui/react @heroicons/react --save
+# Build ứng dụng
+RUN npm run build
 
 # Mở cổng đúng với Vite
 EXPOSE 5173
 
-# Chạy Vite dev server và mở cho máy ngoài truy cập
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+# Chạy Vite preview server và mở cho máy ngoài truy cập
+CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0"]
