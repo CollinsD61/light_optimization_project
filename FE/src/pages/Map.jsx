@@ -96,6 +96,7 @@ const SensorMap = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [openPopup, setOpenPopup] = useState(null); // Add this state to track open popup
   const mapRef = useRef(null);
   const navigate = useNavigate();
   
@@ -516,6 +517,20 @@ const SensorMap = () => {
   
   const handleSensorClick = (sensor) => {
     console.log('Selecting sensor:', sensor.id, 'at coordinates:', sensor.lat, sensor.lng);
+    
+    // Close previous popup if different sensor is clicked
+    if (openPopup && openPopup !== sensor.id) {
+      if (mapRef.current) {
+        mapRef.current.eachLayer((layer) => {
+          if (layer instanceof L.Marker) {
+            layer.closePopup();
+          }
+        });
+      }
+    }
+    
+    // Set current open popup
+    setOpenPopup(sensor.id);
     setSelectedSensor(sensor);
     
     if (mapRef.current) {
@@ -1275,21 +1290,6 @@ const getDeviceTypeText = (type) => {
         }
         
         :global(.custom-map-button:hover) {
-          background: rgba(59, 130, 246, 0.7);
-          color: #fff;
-        }
-        
-        /* Thêm hiệu ứng sáng cho nút khi hover */
-        :global(.custom-map-button:hover svg) {
-          filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5));
-        }
-
-        .night-map-style {
-  filter: brightness(0.85) saturate(1.2) !important;
-}
-
-.night-map-style .leaflet-tile {
-  border: none !important;
 }
       `}</style>
     </div>
