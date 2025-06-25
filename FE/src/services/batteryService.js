@@ -88,7 +88,8 @@ export class BatteryService {
     const batteryDropPerMinute = 0.1;
     const batteryDrop = minutesDiff * batteryDropPerMinute;
     
-    const currentBattery = Math.max(5, initialBattery - batteryDrop);
+    // CHO PHÉP PIN VỀ 0%
+    const currentBattery = Math.max(0, initialBattery - batteryDrop);
     
     console.log('Battery drop rate:', batteryDropPerMinute + '% per minute');
     console.log('Total battery drop:', batteryDrop.toFixed(2) + '%');
