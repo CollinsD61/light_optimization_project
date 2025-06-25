@@ -7,6 +7,7 @@ import L from 'leaflet';
 import { fetchSensorData } from '../api';
 import { ChevronDown, Search, Filter, RefreshCw, PlusCircle, MapPin, AlertTriangle, CheckCircle, Layers } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { BatteryService } from '../services/batteryService';
 
 // Fix for default marker icons with Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -89,14 +90,15 @@ const customIcon = (status, battery = 100, deviceType = 'default', isSelected = 
 const SensorMap = () => {
   const [sensors, setSensors] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [mapCenter, setMapCenter] = useState([21.0285, 105.8542]); // Default: Hanoi coordinates
+  const [mapCenter, setMapCenter] = useState([21.0285, 105.8542]);
   const [zoom, setZoom] = useState(13);
   const [selectedSensor, setSelectedSensor] = useState(null);
   const [mapStyle, setMapStyle] = useState('standard');
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [openPopup, setOpenPopup] = useState(null); // Add this state to track open popup
+  const [openPopup, setOpenPopup] = useState(null);
+  const [batteryUpdateInterval, setBatteryUpdateInterval] = useState(null);
   const mapRef = useRef(null);
   const navigate = useNavigate();
   
@@ -126,8 +128,21 @@ const SensorMap = () => {
   };
 
   useEffect(() => {
+    // Load dữ liệu ngay khi mount
     loadSensorData();
     
+    // Đợi 5 phút trước khi bắt đầu auto-update
+    const delayTimeout = setTimeout(() => {
+      console.log('Starting auto battery update after 5 minutes delay');
+      
+      const interval = setInterval(() => {
+        console.log('Auto battery update every 10 minutes');
+        updateSensorsBattery();
+      }, 10 * 60 * 1000); // 10 phút
+      
+      setBatteryUpdateInterval(interval);
+    }, 5 * 60 * 1000); // Đợi 5 phút
+
     // Set up CSS for custom markers and animations
     const style = document.createElement('style');
     style.innerHTML = `
@@ -272,6 +287,10 @@ const SensorMap = () => {
     document.head.appendChild(style);
     
     return () => {
+      clearTimeout(delayTimeout);
+      if (batteryUpdateInterval) {
+        clearInterval(batteryUpdateInterval);
+      }
       document.head.removeChild(style);
     };
   }, []);
@@ -282,12 +301,43 @@ const SensorMap = () => {
       const response = await fetchSensorData();
       const data = response.data;
       
-      console.log('API Data:', data); // Debug log
-      
       if (data && data.length > 0) {
-        // Sắp xếp theo timestamp và lấy dữ liệu mới nhất
         const sortedData = data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         const latest = sortedData[0];
+        
+        // Lấy giá trị pin từ Firebase
+        const batteryData = await BatteryService.getBattery('hcm-device-01');
+        console.log('Battery data from Firebase:', batteryData);
+        
+        let batteryLevel = 86; // Default value
+        
+        if (batteryData && batteryData.level !== undefined) {
+          // Có dữ liệu pin trên Firebase
+          console.log('Found existing battery data:', batteryData);
+          
+          // Tính toán pin mới dựa trên thời gian đã trôi qua
+          const calculatedBattery = BatteryService.calculateBatteryLevel(
+            batteryData.timestamp, 
+            batteryData.level
+          );
+          
+          console.log('Original battery:', batteryData.level);
+          console.log('Calculated battery after time:', calculatedBattery);
+          
+          // Nếu pin đã thay đổi đáng kể (>= 1%), cập nhật lên Firebase
+          if (Math.abs(calculatedBattery - batteryData.level) >= 1) {
+            console.log(`Battery changed from ${batteryData.level}% to ${calculatedBattery}%`);
+            await BatteryService.updateBattery('hcm-device-01', calculatedBattery);
+            batteryLevel = calculatedBattery;
+          } else {
+            console.log('Battery change too small, keeping original value');
+            batteryLevel = batteryData.level;
+          }
+        } else {
+          // Chưa có dữ liệu, khởi tạo lần đầu
+          console.log('No Firebase data found, initializing with:', batteryLevel);
+          await BatteryService.updateBattery('hcm-device-01', batteryLevel);
+        }
         
         const sensorData = {
           id: 'hcm-device-01',
@@ -299,24 +349,70 @@ const SensorMap = () => {
           deviceType: 'humidity',
           location: 'Quận 1, TP. Hồ Chí Minh',
           timestamp: latest.timestamp,
-          // Sử dụng cùng field names như Dashboard
           light: latest.light_value || 0,
           temperature: latest.temperature || 0,
           humidity: latest.humidity || 0,
-          battery: latest.battery || 85,
+          battery: batteryLevel, // Sử dụng pin đã tính toán
+          batteryLastUpdated: new Date().toISOString(),
           isLive: true
         };
         
-        console.log('Processed sensor:', sensorData); // Debug log
         setSensors([sensorData]);
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error loading sensor data:', error);
     } finally {
       setIsLoading(false);
     }
   };
-  
+
+  // Hàm cập nhật pin
+  const updateSensorsBattery = async (sensorList = sensors) => {
+    try {
+      console.log('Manual battery update triggered');
+      for (const sensor of sensorList) {
+        // Sử dụng smartUpdateBattery thay vì calculateBatteryLevel
+        const newBatteryLevel = await BatteryService.smartUpdateBattery(sensor.id);
+        
+        if (newBatteryLevel !== null) {
+          setSensors(prevSensors => 
+            prevSensors.map(s => 
+              s.id === sensor.id 
+                ? { ...s, battery: newBatteryLevel, batteryLastUpdated: new Date().toISOString() }
+                : s
+            )
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Error updating sensors battery:', error);
+    }
+  };
+
+  // Thêm listener cho realtime updates
+  useEffect(() => {
+    if (sensors.length > 0) {
+      const unsubscribers = sensors.map(sensor => {
+        return BatteryService.listenToBatteryChanges(sensor.id, (snapshot) => {
+          if (snapshot.exists()) {
+            const batteryData = snapshot.val();
+            setSensors(prevSensors => 
+              prevSensors.map(s => 
+                s.id === sensor.id 
+                  ? { ...s, battery: batteryData.level, batteryLastUpdated: batteryData.timestamp }
+                  : s
+              )
+            );
+          }
+        });
+      });
+
+      return () => {
+        unsubscribers.forEach(unsubscribe => unsubscribe());
+      };
+    }
+  }, [sensors.length]);
+
   const getSensorStatus = (temp, humidity, light) => {
     // Logic to determine sensor status based on readings
     if (temp > 30) return 'warning';
@@ -344,34 +440,19 @@ const SensorMap = () => {
   const handleSensorClick = (sensor) => {
     console.log('Selecting sensor:', sensor.id, 'at coordinates:', sensor.lat, sensor.lng);
     
-    // Close previous popup if different sensor is clicked
-    if (openPopup && openPopup !== sensor.id) {
-      if (mapRef.current) {
-        mapRef.current.eachLayer((layer) => {
-          if (layer instanceof L.Marker) {
-            layer.closePopup();
-          }
-        });
-      }
-    }
-    
-    // Set current open popup
-    setOpenPopup(sensor.id);
+    // Không tự động cập nhật pin khi click
+    // Chỉ set selected sensor
     setSelectedSensor(sensor);
+    setOpenPopup(sensor.id);
     
     if (mapRef.current) {
-      // Focus vào sensor với zoom level phù hợp
       mapRef.current.flyTo([sensor.lat, sensor.lng], 16, {
         animate: true,
         duration: 1.5
       });
       
-      console.log('Map flying to:', sensor.lat, sensor.lng);
-      
-      // Sau khi animation hoàn thành, mở popup
       setTimeout(() => {
         if (mapRef.current) {
-          // Tìm marker tương ứng và mở popup
           mapRef.current.eachLayer((layer) => {
             if (layer instanceof L.Marker) {
               const position = layer.getLatLng();
@@ -380,11 +461,9 @@ const SensorMap = () => {
               }
             }
           });
-          
-          // Force marker re-render để highlight
           mapRef.current.invalidateSize();
         }
-      }, 1600); // Đợi animation hoàn thành
+      }, 1600);
     }
   };
   
@@ -450,6 +529,53 @@ const getDeviceTypeText = (type) => {
     }, 100);
   }
 }, [selectedSensor]);
+
+  // Thêm function này vào SensorMap component
+const forceSyncBattery = async () => {
+  try {
+    console.log('Force syncing battery...');
+    const batteryData = await BatteryService.getBattery('hcm-device-01');
+    console.log('Current Firebase battery:', batteryData);
+    
+    if (batteryData && batteryData.level !== undefined) {
+      setSensors(prevSensors => 
+        prevSensors.map(sensor => ({
+          ...sensor,
+          battery: batteryData.level,
+          batteryLastUpdated: batteryData.timestamp
+        }))
+      );
+      console.log('Battery synced to:', batteryData.level);
+    } else {
+      console.log('No battery data found');
+    }
+  } catch (error) {
+    console.error('Error syncing battery:', error);
+  }
+};
+
+  // Thêm function test battery calculation
+const testBatteryCalculation = async () => {
+  try {
+    console.log('=== TESTING BATTERY CALCULATION ===');
+    const batteryData = await BatteryService.getBattery('hcm-device-01');
+    
+    if (batteryData) {
+      console.log('Current Firebase data:', batteryData);
+      
+      // Test với timestamp giả (1 giờ trước)
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const calculatedBattery = BatteryService.calculateBatteryLevel(oneHourAgo, batteryData.level);
+      
+      console.log('If last update was 1 hour ago:');
+      console.log('Original:', batteryData.level + '%');
+      console.log('After 1 hour:', calculatedBattery + '%');
+      console.log('Difference:', (batteryData.level - calculatedBattery) + '%');
+    }
+  } catch (error) {
+    console.error('Error testing battery calculation:', error);
+  }
+};
 
   return (
     <div className="p-6 bg-gradient-to-br from-gray-800 to-gray-900 min-h-screen">
@@ -589,6 +715,27 @@ const getDeviceTypeText = (type) => {
           >
             <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
             <span>{isLoading ? 'Đang tải...' : 'Làm mới'}</span>
+          </button>
+          
+          <button 
+            onClick={forceSyncBattery}
+            className="flex-1 py-3 bg-purple-700/60 hover:bg-purple-600/60 backdrop-blur-sm border border-purple-600/60 rounded-xl text-white flex items-center justify-center gap-2 transition-all duration-300"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+    </svg>
+            <span>Đồng bộ pin</span>
+          </button>
+
+          {/* Nút test calculation */}
+          <button 
+            onClick={testBatteryCalculation}
+            className="flex-1 py-3 bg-indigo-700/60 hover:bg-indigo-600/60 backdrop-blur-sm border border-indigo-600/60 rounded-xl text-white flex items-center justify-center gap-2 transition-all duration-300"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+    </svg>
+            <span>Test tính toán</span>
           </button>
           
           <button 
@@ -906,7 +1053,7 @@ const getDeviceTypeText = (type) => {
           <div className="flex space-x-3">
             <button className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center gap-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V4a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2V4a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
               </svg>
               Xem lịch sử
             </button>
