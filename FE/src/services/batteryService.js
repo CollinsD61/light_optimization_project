@@ -112,7 +112,7 @@ export class BatteryService {
     }
   }
 
-  // Thêm function để lấy thời gian battery được update lần cuối
+  // Thêm function để lấy thời gian battery được update lần cuối 2
   static async getLastBatteryUpdateTime(sensorId) {
     try {
       const batteryData = await this.getBattery(sensorId);
