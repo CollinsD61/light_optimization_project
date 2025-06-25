@@ -279,213 +279,39 @@ const SensorMap = () => {
   const loadSensorData = async () => {
     setIsLoading(true);
     try {
-      // Fetch remote data if available
-      // const response = await fetchSensorData();
-      // const data = response.data || [];
+      const response = await fetchSensorData();
+      const data = response.data;
       
-      // Define Vietnam device locations with device types
-      const vietnamDevices = [
-        {
-          id: 'hn-device-01',
-          sensor_id: 'hn-device-01',
-          name: 'Cảm biến môi trường Hà Nội',
-          latitude: 21.0285,
-          longitude: 105.8542,
-          sensor_type: 'environment',
-          device_type: 'environment',
-          location_name: 'Hoàn Kiếm, Hà Nội',
-          timestamp: new Date().toISOString(),
-          light_value: 850,
-          temperature: 28.5,
-          humidity: 75,
-          battery: 85
-        },
-        {
-          id: 'hn-device-02',
-          sensor_id: 'hn-device-02',
-          name: 'Cảm biến nhiệt Hà Nội',
-          latitude: 21.0399,
-          longitude: 105.8244,
-          sensor_type: 'temperature',
-          device_type: 'temperature',
-          location_name: 'Ba Đình, Hà Nội',
-          timestamp: new Date().toISOString(),
-          light_value: 780,
-          temperature: 31.5,
-          humidity: 68,
-          battery: 42
-        },
-        {
+      console.log('API Data:', data); // Debug log
+      
+      if (data && data.length > 0) {
+        // Sắp xếp theo timestamp và lấy dữ liệu mới nhất
+        const sortedData = data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        const latest = sortedData[0];
+        
+        const sensorData = {
           id: 'hcm-device-01',
           sensor_id: 'hcm-device-01',
           name: 'Cảm biến độ ẩm TP.HCM',
-          latitude: 10.7769,
-          longitude: 106.7009,
-          sensor_type: 'humidity',
-          device_type: 'humidity',
-          location_name: 'Quận 1, TP. Hồ Chí Minh',
-          timestamp: new Date().toISOString(),
-          light_value: 950,
-          temperature: 32.3,
-          humidity: 78,
-          battery: 62
-        },
-        {
-          id: 'hcm-device-02',
-          sensor_id: 'hcm-device-02',
-          name: 'Cảm biến ánh sáng TP.HCM',
-          latitude: 10.8231,
-          longitude: 106.6297,
-          sensor_type: 'light',
-          device_type: 'light',
-          location_name: 'Tân Bình, TP. Hồ Chí Minh',
-          timestamp: new Date().toISOString(),
-          light_value: 1020,
-          temperature: 31.8,
-          humidity: 70,
-          battery: 89
-        },
-        {
-          id: 'dn-device-01',
-          sensor_id: 'dn-device-01',
-          name: 'Gateway Đà Nẵng',
-          latitude: 16.0544,
-          longitude: 108.2022,
-          sensor_type: 'gateway',
-          device_type: 'gateway',
-          location_name: 'Hải Châu, Đà Nẵng',
-          timestamp: new Date().toISOString(),
-          light_value: 780,
-          temperature: 30.1,
-          humidity: 80,
-          battery: 45
-        },
-        {
-          id: 'ct-device-01',
-          sensor_id: 'ct-device-01',
-          name: 'Cảm biến môi trường Cần Thơ',
-          latitude: 10.0452,
-          longitude: 105.7469,
-          sensor_type: 'environment',
-          device_type: 'environment',
-          location_name: 'Ninh Kiều, Cần Thơ',
-          timestamp: new Date().toISOString(),
-          light_value: 910,
-          temperature: 31.5,
-          humidity: 83,
-          battery: 23
-        },
-        {
-          id: 'hue-device-01',
-          sensor_id: 'hue-device-01',
-          name: 'Cảm biến nhiệt Huế',
-          latitude: 16.4637,
-          longitude: 107.5909,
-          sensor_type: 'temperature',
-          device_type: 'temperature',
-          location_name: 'TP. Huế, Thừa Thiên Huế',
-          timestamp: new Date().toISOString(),
-          light_value: 650,
-          temperature: 29.3,
-          humidity: 76,
-          battery: 91
-        },
-        {
-          id: 'hp-device-01',
-          sensor_id: 'hp-device-01',
-          name: 'Cảm biến độ ẩm Hải Phòng',
-          latitude: 20.8449,
-          longitude: 106.6881,
-          sensor_type: 'humidity',
-          device_type: 'humidity',
-          location_name: 'Hồng Bàng, Hải Phòng',
-          timestamp: new Date().toISOString(),
-          light_value: 730,
-          temperature: 27.8,
-          humidity: 74,
-          battery: 12
-        },
-        {
-          id: 'vt-device-01',
-          sensor_id: 'vt-device-01',
-          name: 'Cảm biến ánh sáng Vũng Tàu',
-          latitude: 10.3466,
-          longitude: 107.0826,
-          sensor_type: 'light',
-          device_type: 'light',
-          location_name: 'Vũng Tàu, Bà Rịa - Vũng Tàu',
-          timestamp: new Date().toISOString(),
-          light_value: 920,
-          temperature: 32.7,
-          humidity: 79,
-          battery: 68
-        },
-        {
-          id: 'nt-device-01',
-          sensor_id: 'nt-device-01',
-          name: 'Gateway Nha Trang',
-          latitude: 12.2388,
-          longitude: 109.1967,
-          sensor_type: 'gateway',
-          device_type: 'gateway',
-          location_name: 'Nha Trang, Khánh Hòa',
-          timestamp: new Date().toISOString(),
-          light_value: 980,
-          temperature: 30.5,
-          humidity: 77,
-          battery: 71
-        }
-      ];
-      
-      // For demo, just use the predefined data
-      const combinedData = vietnamDevices; // [...data, ...vietnamDevices];
-      
-      // Group by sensor location (keeping the original logic)
-      const sensorMap = {};
-      combinedData.forEach(reading => {
-        const id = reading.sensor_id || 'main-sensor';
-        if (!sensorMap[id]) {
-          sensorMap[id] = {
-            id,
-            name: reading.name || `Sensor ${id}`,
-            lat: reading.latitude || 21.0285,
-            lng: reading.longitude || 105.8542,
-            type: reading.sensor_type || 'environment',
-            deviceType: reading.device_type || reading.sensor_type || 'environment',
-            location: reading.location_name || 'Vị trí không xác định',
-            readings: [],
-            battery: reading.battery || Math.floor(Math.random() * 100) // Add battery info
-          };
-        }
-        
-        sensorMap[id].readings.push({
-          timestamp: reading.timestamp,
-          light: reading.light_value,
-          temperature: reading.temperature,
-          humidity: reading.humidity
-        });
-      });
-      
-      // Get last readings for each sensor (keeping the original logic)
-      const sensorList = Object.values(sensorMap).map(sensor => {
-        const latestReading = sensor.readings.sort((a, b) => 
-          new Date(b.timestamp) - new Date(a.timestamp)
-        )[0];
-        
-        return {
-          ...sensor,
-          ...latestReading
+          lat: 10.7769,
+          lng: 106.7009,
+          type: 'humidity',
+          deviceType: 'humidity',
+          location: 'Quận 1, TP. Hồ Chí Minh',
+          timestamp: latest.timestamp,
+          // Sử dụng cùng field names như Dashboard
+          light: latest.light_value || 0,
+          temperature: latest.temperature || 0,
+          humidity: latest.humidity || 0,
+          battery: latest.battery || 85,
+          isLive: true
         };
-      });
-      
-      setSensors(sensorList);
-      
-      // Center the map on Vietnam to show all markers
-      setMapCenter([15.9030, 105.8067]); // Centered on Vietnam
-      setZoom(6); // Set zoom level to show most of Vietnam
-      
+        
+        console.log('Processed sensor:', sensorData); // Debug log
+        setSensors([sensorData]);
+      }
     } catch (error) {
-      console.error('Error loading sensor data for map:', error);
+      console.error('Error:', error);
     } finally {
       setIsLoading(false);
     }
