@@ -84,8 +84,8 @@ export class BatteryService {
       return initialBattery;
     }
     
-    // Tốc độ tụt pin: 0.1% mỗi phút = 6% mỗi giờ
-    const batteryDropPerMinute = 0.1;
+    // Tốc độ tụt pin: 0.01% mỗi phút = 6% mỗi giờ
+    const batteryDropPerMinute = 0.01;
     const batteryDrop = minutesDiff * batteryDropPerMinute;
     
     // CHO PHÉP PIN VỀ 0%
