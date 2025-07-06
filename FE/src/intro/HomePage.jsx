@@ -112,7 +112,7 @@ Nghiên cứu này chứng minh tiềm năng của công nghệ cảm biến hi�
                         <div className="flex items-center">
                             <span className={`ml-2 md:ml-3 text-lg md:text-xl font-bold transition-colors duration-300 
                                 ${isScrolled ? 'text-black' : 'text-white'}`}>
-                                Light Optimizations
+                                Light Optimization
                             </span>
                         </div>
                         {/* Nút nav mobile */}
@@ -176,9 +176,15 @@ Nghiên cứu này chứng minh tiềm năng của công nghệ cảm biến hi�
                     </p>
                     <button
                         onClick={() => scrollToSection(aboutRef)}
-                        className="bg-white text-black px-6 py-3 rounded-md font-medium hover:bg-opacity-90 transition-all duration-300 shadow-lg"
+                        className="relative overflow-hidden bg-white text-black px-8 py-3 rounded-md font-medium shadow-lg group"
                     >
-                        Learn More
+                        <span className="absolute inset-0 w-0 bg-blue-600 transition-all duration-500 ease-out group-hover:w-full"></span>
+                        <span className="relative flex items-center justify-center gap-2 transition-colors duration-300 group-hover:text-white">
+                            Learn More
+                            <svg className="w-5 h-5 transform transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                            </svg>
+                        </span>
                     </button>
                 </div>
 
@@ -308,24 +314,63 @@ Nghiên cứu này chứng minh tiềm năng của công nghệ cảm biến hi�
                                         </div>
                                         
                                         <div className="grid grid-cols-2 gap-4 mt-2">
-                                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 transition-all hover:border-blue-300 hover:shadow-md">
+                                            {/* Giám sát card with eye animation */}
+                                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 transition-all hover:border-blue-300 hover:shadow-md group">
                                                 <div className="flex items-center mb-2">
-                                                    <div className="bg-blue-100 p-2 rounded-full mr-2">
+                                                    <div className="bg-blue-100 p-2 rounded-full mr-2 overflow-hidden relative group-hover:bg-blue-200 transition-all duration-300">
                                                         <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                                            <path 
+                                                                strokeLinecap="round" 
+                                                                strokeLinejoin="round" 
+                                                                strokeWidth="2" 
+                                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                                                className="group-hover:animate-pulse"
+                                                            ></path>
+                                                            <path 
+                                                                strokeLinecap="round" 
+                                                                strokeLinejoin="round" 
+                                                                strokeWidth="2" 
+                                                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                                                className="group-hover:animate-[scan_2s_ease-in-out_infinite]"
+                                                            ></path>
                                                         </svg>
+                                                        {/* Radar wave effect */}
+                                                        <div className="absolute inset-0 rounded-full border-4 border-transparent group-hover:border-blue-300/30 group-hover:scale-150 group-hover:opacity-0 transition-all duration-1000"></div>
                                                     </div>
                                                     <div className="text-blue-600 font-semibold">Giám sát</div>
                                                 </div>
                                                 <p className="text-sm text-gray-700">Theo dõi liên tục các thông số ánh sáng, nhiệt độ và độ ẩm</p>
                                             </div>
                                             
-                                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 transition-all hover:border-blue-300 hover:shadow-md">
+                                            {/* Phân tích card with chart animation */}
+                                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 transition-all hover:border-blue-300 hover:shadow-md group">
                                                 <div className="flex items-center mb-2">
-                                                    <div className="bg-blue-100 p-2 rounded-full mr-2">
+                                                    <div className="bg-blue-100 p-2 rounded-full mr-2 group-hover:bg-blue-200 transition-all duration-300">
                                                         <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                                            <path 
+                                                                strokeLinecap="round" 
+                                                                strokeLinejoin="round" 
+                                                                strokeWidth="2"
+                                                                className="group-hover:animate-bounce origin-bottom"
+                                                                style={{animationDuration: "1.2s"}}
+                                                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2z"
+                                                            ></path>
+                                                            <path 
+                                                                strokeLinecap="round" 
+                                                                strokeLinejoin="round" 
+                                                                strokeWidth="2"
+                                                                className="group-hover:animate-bounce origin-bottom" 
+                                                                style={{animationDuration: "0.8s", animationDelay: "0.2s"}}
+                                                                d="M9 19V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2"
+                                                            ></path>
+                                                            <path 
+                                                                strokeLinecap="round" 
+                                                                strokeLinejoin="round" 
+                                                                strokeWidth="2"
+                                                                className="group-hover:animate-bounce origin-bottom"
+                                                                style={{animationDuration: "1s", animationDelay: "0.4s"}} 
+                                                                d="M15 19V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                                                            ></path>
                                                         </svg>
                                                     </div>
                                                     <div className="text-blue-600 font-semibold">Phân tích</div>
@@ -333,24 +378,49 @@ Nghiên cứu này chứng minh tiềm năng của công nghệ cảm biến hi�
                                                 <p className="text-sm text-gray-700">Xử lý dữ liệu và đưa ra các dự đoán về nhu cầu ánh sáng</p>
                                             </div>
                                             
-                                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 transition-all hover:border-blue-300 hover:shadow-md">
+                                            {/* Tối ưu hoá card with lightning animation */}
+                                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 transition-all hover:border-blue-300 hover:shadow-md group">
                                                 <div className="flex items-center mb-2">
-                                                    <div className="bg-blue-100 p-2 rounded-full mr-2">
-                                                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                                    <div className="bg-blue-100 p-2 rounded-full mr-2 overflow-hidden relative group-hover:bg-blue-200 transition-all duration-300">
+                                                        <svg className="w-5 h-5 text-blue-600 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path 
+                                                                strokeLinecap="round" 
+                                                                strokeLinejoin="round" 
+                                                                strokeWidth="2" 
+                                                                d="M13 10V3L4 14h7v7l9-11h-7z"
+                                                                className="group-hover:text-yellow-500 transition-colors duration-300 group-hover:animate-pulse"
+                                                            ></path>
                                                         </svg>
+                                                        {/* Lightning flash effect */}
+                                                        <div className="absolute inset-0 bg-yellow-300/0 group-hover:bg-yellow-300/30 group-hover:animate-[flash_1.5s_ease-out_infinite] rounded-full"></div>
                                                     </div>
                                                     <div className="text-blue-600 font-semibold">Tối ưu hoá</div>
                                                 </div>
                                                 <p className="text-sm text-gray-700">Điều chỉnh ánh sáng tự động theo từng giai đoạn phát triển</p>
                                             </div>
                                             
-                                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 transition-all hover:border-blue-300 hover:shadow-md">
+                                            {/* Tiết kiệm card with money animation */}
+                                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 transition-all hover:border-blue-300 hover:shadow-md group">
                                                 <div className="flex items-center mb-2">
-                                                    <div className="bg-blue-100 p-2 rounded-full mr-2">
+                                                    <div className="bg-blue-100 p-2 rounded-full mr-2 group-hover:bg-blue-200 transition-all duration-300 overflow-hidden relative">
                                                         <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                            <circle 
+                                                                cx="12" 
+                                                                cy="12" 
+                                                                r="8"
+                                                                className="group-hover:animate-[spin_3s_linear_infinite]"
+                                                            />
+                                                            <path 
+                                                                strokeLinecap="round" 
+                                                                strokeLinejoin="round" 
+                                                                strokeWidth="2" 
+                                                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                                className="group-hover:text-green-500 transition-colors duration-300"
+                                                            ></path>
                                                         </svg>
+                                                        {/* Coins falling effect */}
+                                                        <div className="absolute -bottom-8 left-2 w-1 h-1 bg-yellow-400 rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-[fallCoin_1.5s_ease-in_infinite]"></div>
+                                                        <div className="absolute -bottom-8 left-4 w-1 h-1 bg-yellow-400 rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-[fallCoin_1.3s_ease-in_infinite_.2s]"></div>
                                                     </div>
                                                     <div className="text-blue-600 font-semibold">Tiết kiệm</div>
                                                 </div>
@@ -573,28 +643,19 @@ Nghiên cứu này chứng minh tiềm năng của công nghệ cảm biến hi�
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-12">
                             {/* Team member card */}
-                            {[1, 2, 3, 4].map((idx) => {
+                            {[1, 2,].map((idx) => {
                                 const data = [
                                     {
                                         img: "/images/dohoang.jpg",
                                         name: "Đỗ Huy Hoàng",
-                                        role: "Founder",
+                                        role: "Software Engineer",
                                     },
                                     {
                                         img: "/images/duchai.jpg",
                                         name: "Chu Đức Hải",
-                                        role: "Project Manager",
+                                        role: "Software Engineer",
                                     },
-                                    {
-                                        img: "/images/minhhieu.jpg",
-                                        name: "Trịnh Minh Hiếu",
-                                        role: "Data Analyst",
-                                    },
-                                    {
-                                        img: "/images/chuong.jpg",
-                                        name: "Bùi Đức Chương",
-                                        role: "Marketing Specialist",
-                                    },
+                                    
                                 ][idx - 1];
                                 return (
                                     <div className="flex flex-col items-center text-center" key={idx}>
@@ -692,7 +753,7 @@ Nghiên cứu này chứng minh tiềm năng của công nghệ cảm biến hi�
                                         <div className="flex flex-col justify-center">
                                             <p className="font-medium text-gray-900 mb-1">Technical Support</p>
                                             <a href="mailto:22520485@gm.uit.edu.vn" className="text-blue-600 hover:text-blue-800 transition-colors">
-                                                22520485@gm.uit.edu.vn
+                                                haidonglethqb@gmail.com
                                             </a>
                                         </div>
                                     </div>
@@ -842,7 +903,7 @@ Nghiên cứu này chứng minh tiềm năng của công nghệ cảm biến hi�
                                     <div className="font-medium text-lg">Nhóm nghiên cứu UIT</div>
                                     <div className="text-sm text-gray-500 flex items-center">
                                         <svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9  8h16M4 16h16M4 8h16" />
                                         </svg>
                                         Xuất bản: {new Date().toLocaleDateString('vi-VN')}
                                     </div>
@@ -852,7 +913,7 @@ Nghiên cứu này chứng minh tiềm năng của công nghệ cảm biến hi�
                                         href={selectedArticle.link} 
                                         target="_blank" 
                                         rel="noopener noreferrer" 
-                                        className="px-3 py-1.5 bg-blue-100 text-blue-600 rounded-full text-sm font-medium hover:bg-blue-200 transition-all flex items-center"
+                                        className="px-3 py-1.5 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700 transition-all flex items-center"
                                     >
                                         <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -907,7 +968,7 @@ Nghiên cứu này chứng minh tiềm năng của công nghệ cảm biến hi�
                                             )}
                                             {keyword === "Tối ưu hóa năng lượng" && (
                                                 <svg className="w-4 h-4 mr-1.5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                                                 </svg>
                                             )}
                                             {keyword === "Thanh long" && (
@@ -948,12 +1009,12 @@ Nghiên cứu này chứng minh tiềm năng của công nghệ cảm biến hi�
                                 <div className="flex space-x-3">
                                     <button className="p-2 rounded-full hover:bg-gray-100 transition-colors">
                                         <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H17m-10 0H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2z"></path>
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H17m-10 0H5a2 2 0 00-2 2v4a2 2 0 002 2h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2h6a2 2 0 002-2v-4a2 2 0 00-2-2h-2z"></path>
                                         </svg>
                                     </button>
                                     <button className="p-2 rounded-full hover:bg-gray-100 transition-colors">
                                         <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
                                         </svg>
                                     </button>
                                 </div>

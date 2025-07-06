@@ -12,7 +12,7 @@ def check_intro_page(driver):
     driver.get(f"{BASE_URL}/")
     time.sleep(1)
     
-    # Kiểm tra các thành phần trong trang intro
+    
     nav_items = ["About Us", "Our Projects", "Team", "Contact Us"]
     for item in nav_items:
         assert driver.find_elements(By.XPATH, f"//a[contains(text(), '{item}')]"), f"❌ Không thấy menu '{item}'"
