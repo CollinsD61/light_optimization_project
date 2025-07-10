@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App.jsx';
 
-// 1. Import thư viện của Google
+// 1. Import thư viện của Google 
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
 // 2. Lấy Client ID từ file .env
