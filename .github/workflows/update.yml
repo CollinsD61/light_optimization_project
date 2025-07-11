@@ -14,122 +14,122 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # # 2. Setup Node.js cho FE
-      # - name: Setup Node.js
-      #   uses: actions/setup-node@v4
-      #   with:
-      #     node-version: '20'
+      # 2. Setup Node.js cho FE
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-      # # 3. Install FE dependencies
-      # - name: Install FE dependencies
-      #   run: |
-      #     # Hạ cấp React trước khi cài đặt dependencies
-      #     sed -i 's/\"react\": \"^19.0.0\"/\"react\": \"^18.2.0\"/g' package.json
-      #     sed -i 's/\"react-dom\": \"^19.0.0\"/\"react-dom\": \"^18.2.0\"/g' package.json
-      #     sed -i 's/\"@types\/react\": \"^19.0.10\"/\"@types\/react\": \"^18.2.48\"/g' package.json
-      #     sed -i 's/\"@types\/react-dom\": \"^19.0.4\"/\"@types\/react-dom\": \"^18.2.19\"/g' package.json
-      #     # Cài đặt dependencies
-      #     npm install
-      #   working-directory: FE
+      # 3. Install FE dependencies
+      - name: Install FE dependencies
+        run: |
+          # Hạ cấp React trước khi cài đặt dependencies
+          sed -i 's/\"react\": \"^19.0.0\"/\"react\": \"^18.2.0\"/g' package.json
+          sed -i 's/\"react-dom\": \"^19.0.0\"/\"react-dom\": \"^18.2.0\"/g' package.json
+          sed -i 's/\"@types\/react\": \"^19.0.10\"/\"@types\/react\": \"^18.2.48\"/g' package.json
+          sed -i 's/\"@types\/react-dom\": \"^19.0.4\"/\"@types\/react-dom\": \"^18.2.19\"/g' package.json
+          # Cài đặt dependencies
+          npm install
+        working-directory: FE
 
-      # - name: Lint FE
-      #   run: npm run lint || true
-      #   working-directory: FE
+      - name: Lint FE
+        run: npm run lint || true
+        working-directory: FE
 
-      # - name: Build FE
-      #   run: npm run build
-      #   working-directory: FE
+      - name: Build FE
+        run: npm run build
+        working-directory: FE
 
-      # # 4. SonarCloud Scan 
-      # - name: SonarCloud Scan
-      #   uses: SonarSource/sonarcloud-github-action@v2
-      #   with:
-      #     projectBaseDir: .
-      #   env:
-      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      # 4. SonarCloud Scan 
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v2
+        with:
+          projectBaseDir: .
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      # # 5. Snyk quét source (FE)
-      # - name: Install Snyk CLI
-      #   run: npm install -g snyk
+      # 5. Snyk quét source (FE)
+      - name: Install Snyk CLI
+        run: npm install -g snyk
 
-      # - name: Snyk test (FE)
-      #   env:
-      #     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      #   run: |
-      #     rm -f package-lock.json
-      #     snyk test || true
-      #   working-directory: FE
+      - name: Snyk test (FE)
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          rm -f package-lock.json
+          snyk test || true
+        working-directory: FE
 
-      # # 6. Cài BE dependencies trước khi quét Snyk BE!
-      # - name: Install BE dependencies
-      #   run: pip install -r requirements.txt
-      #   working-directory: BE
+      # 6. Cài BE dependencies trước khi quét Snyk BE!
+      - name: Install BE dependencies
+        run: pip install -r requirements.txt
+        working-directory: BE
 
-      # # 7. Snyk test (BE)
-      # - name: Snyk test (BE)
-      #   env:
-      #     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      #   run: snyk test || true
-      #   working-directory: BE
+      # 7. Snyk test (BE)
+      - name: Snyk test (BE)
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk test || true
+        working-directory: BE
 
-      # # 8. Build Docker image FE & BE
-      # - name: Build FE Docker image
-      #   run: docker build -t fe-app:ci-latest ./FE
+      # 8. Build Docker image FE & BE
+      - name: Build FE Docker image
+        run: docker build -t fe-app:ci-latest ./FE
 
-      # - name: Build BE Docker image
-      #   run: docker build -t be-app:ci-latest ./BE
+      - name: Build BE Docker image
+        run: docker build -t be-app:ci-latest ./BE
 
-      # # 9. Snyk quét image FE & BE
-      # - name: Snyk container scan FE image
-      #   env:
-      #     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      #   run: snyk container test fe-app:ci-latest || true
+      # 9. Snyk quét image FE & BE
+      - name: Snyk container scan FE image
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk container test fe-app:ci-latest || true
 
-      # - name: Snyk container scan BE image
-      #   env:
-      #     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      #   run: snyk container test be-app:ci-latest || true
+      - name: Snyk container scan BE image
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk container test be-app:ci-latest || true
 
-      # # 10. Trivy quét image FE & BE
-      # - name: Install Trivy
-      #   run: |
-      #     curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+      # 10. Trivy quét image FE & BE
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-      # - name: Trivy scan FE image
-      #   run: trivy image --severity CRITICAL,HIGH fe-app:ci-latest
+      - name: Trivy scan FE image
+        run: trivy image --severity CRITICAL,HIGH fe-app:ci-latest
 
-      # - name: Trivy scan BE image
-      #   run: trivy image --severity CRITICAL,HIGH be-app:ci-latest
+      - name: Trivy scan BE image
+        run: trivy image --severity CRITICAL,HIGH be-app:ci-latest
 
-      # # 11. Selenium UI test (build & start FE server)
-      # - name: Start FE server (Vite dev)
-      #   run: nohup npm run dev -- --host 0.0.0.0 &
-      #   working-directory: FE
+      # 11. Selenium UI test (build & start FE server)
+      - name: Start FE server (Vite dev)
+        run: nohup npm run dev -- --host 0.0.0.0 &
+        working-directory: FE
 
-      # - name: Wait FE server ready
-      #   run: |
-      #     for i in {1..10}; do
-      #       curl -sSf http://localhost:5173/ && exit 0
-      #       echo "Waiting for FE server..."
-      #       sleep 2
-      #     done
-      #     echo "FE server did not start in time!" && exit 1
+      - name: Wait FE server ready
+        run: |
+          for i in {1..10}; do
+            curl -sSf http://localhost:5173/ && exit 0
+            echo "Waiting for FE server..."
+            sleep 2
+          done
+          echo "FE server did not start in time!" && exit 1
 
-      # - name: Setup Python
-      #   uses: actions/setup-python@v5
-      #   with:
-      #     python-version: '3.10'
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
 
-      # - name: Install Selenium (no requirements.txt)
-      #   run: pip install selenium
-      #   working-directory: selenium
+      - name: Install Selenium (no requirements.txt)
+        run: pip install selenium
+        working-directory: selenium
 
-      # - name: Setup Chrome
-      #   uses: browser-actions/setup-chrome@v1
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@v1
 
-      # - name: Run Selenium Python UI tests
-      #   run: python test.py
-      #   working-directory: selenium
+      - name: Run Selenium Python UI tests
+        run: python test.py
+        working-directory: selenium
 
       # 12. Setup SSH key
       - name: Setup SSH key
