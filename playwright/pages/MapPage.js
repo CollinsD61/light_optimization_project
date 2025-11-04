@@ -7,11 +7,21 @@ class MapPage extends BasePage {
   constructor(page) {
     super(page);
     
-    // Locators
+    // Locators - Based on actual findings
     this.pageTitle = 'h1:has-text("Bản đồ")';
-    this.mapContainer = '[class*="map"], #map, .leaflet-container';
+    this.mapContainer = '.leaflet-container'; // Leaflet map found
     this.sensorMarker = '[class*="marker"]';
-    this.sensorInfo = '[class*="sensor-info"], [class*="popup"]';
+    this.sensorInfo = '[class*="sensor-info"], [class*="popup"], .leaflet-popup';
+    
+    // Map controls found
+    this.btnFilter = 'button:has-text("Lọc")';
+    this.btnStyleStandard = 'button:has-text("Standard")';
+    this.btnStyleDark = 'button:has-text("Dark")';
+    this.btnStyleSatellite = 'button:has-text("Satellite")';
+    this.btnStyleNight = 'button:has-text("Night")';
+    this.btnRefresh = 'button:has-text("Làm mới")';
+    this.btnSyncPin = 'button:has-text("Đồng bộ pin")';
+    this.btnAddSensor = 'button:has-text("Thêm cảm biến")';
     
     // Sensor details
     this.sensorName = '[class*="sensor-name"]';
@@ -27,7 +37,9 @@ class MapPage extends BasePage {
    */
   async navigate() {
     await this.goto('/mainlayout/map');
+    await this.waitForElement('#root > *'); // Wait for React
     await this.waitForElement(this.mapContainer, 15000);
+    await this.wait(2000); // Wait for map to fully load
   }
 
   /**

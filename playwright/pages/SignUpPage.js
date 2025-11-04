@@ -7,13 +7,14 @@ class SignUpPage extends BasePage {
   constructor(page) {
     super(page);
     
-    // Locators
-    this.emailInput = 'input[type="email"]';
-    this.passwordInput = 'input[type="password"]';
+    // Locators - Based on actual findings
+    this.emailInput = 'input#email[type="email"][name="email"]';
+    this.passwordInput = 'input#password[type="password"][name="password"]';
     this.confirmPasswordInput = 'input[name="confirmPassword"], input[placeholder*="Nhập lại"]';
-    this.btnSignUp = 'button[type="submit"]';
+    this.btnSignUp = 'button[type="submit"]:has-text("Đăng ký tài khoản")';
+    this.btnShowPassword = 'button[type="button"]'; // Eye icon
     this.linkLogin = 'a:has-text("Đăng nhập")';
-    this.errorMessage = '.error, [role="alert"]';
+    this.errorMessage = '.text-red-500, [role="alert"]';
     this.successMessage = '.success';
   }
 

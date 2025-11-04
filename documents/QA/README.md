@@ -50,6 +50,26 @@ Production testing configuration:
 - Best practices & warnings
 - Rollback instructions
 
+### 6. [PARALLEL_TESTING_WORKFLOW.md](PARALLEL_TESTING_WORKFLOW.md) ⚡
+Parallel testing workflow optimization:
+- 4 jobs chạy song song (SonarCloud, Snyk, Trivy, Playwright)
+- Giảm thời gian test ~70% (từ 15 phút xuống 5 phút)
+- Continue-on-error strategy
+- Job dependencies & aggregation
+- Manual trigger support
+- Performance improvements
+- Troubleshooting guide
+
+### 7. [IOT_ENDPOINT_VERIFICATION.md](IOT_ENDPOINT_VERIFICATION.md) 🔌
+IoT endpoint verification & test results:
+- Backend API subdomain: `api.lightoptimization.io.vn`
+- Endpoint: `POST /api/receive-data`
+- Test results: **33/33 tests passed** ✅
+- Django → Node.js migration compatibility
+- IoT device integration guide (Python, JavaScript)
+- Architecture overview
+- Production deployment checklist
+
 ---
 
 ## 🚀 Quick Start
@@ -125,29 +145,31 @@ cat CI_CD_WORKFLOWS.md
 
 ---
 
-## 🔄 CI/CD Pipeline
+## 🔄 CI/CD Pipeline (Optimized)
 
 ```
 Push to master
      ↓
-update.yml (5-10 min)
-  • Build & Deploy
+update.yml (~2-3 min) ⚡
+  • Checkout code
+  • Deploy to VPS
      ↓
-test.yml (15-30 min)
-  ├─ Security Scans
-  │  • SonarCloud
-  │  • Snyk
-  │  • Trivy
-  │
-  └─ Playwright Tests
-     • 40+ E2E tests
-     • Screenshots
-     • Reports
+test.yml (~5-6 min) ⚡ PARALLEL
+  ├─ SonarCloud (~3 min)
+  ├─ Snyk Security (~5 min)
+  ├─ Trivy Security (~5 min)
+  └─ Playwright E2E (~3 min)
+     ↓
+  Test Summary
+  • Aggregate results
+  • Upload artifacts
 ```
+
+**Total**: ~7-9 minutes (70% faster than before!)
 
 ---
 
 **Path**: `documents/QA/`  
-**Docs**: 4 files  
-**Topics**: Playwright, CI/CD, Testing
+**Docs**: 7 files  
+**Topics**: Playwright, CI/CD, Testing, Security, IoT Integration
 

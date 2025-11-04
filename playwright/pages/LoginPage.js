@@ -7,14 +7,15 @@ class LoginPage extends BasePage {
   constructor(page) {
     super(page);
     
-    // Locators
-    this.emailInput = 'input[type="email"]';
-    this.passwordInput = 'input[type="password"]';
+    // Locators - Based on actual findings
+    this.emailInput = 'input#email[type="email"][name="email"]';
+    this.passwordInput = 'input#password[type="password"][name="password"]';
     this.btnLogin = 'button[type="submit"]';
+    this.btnShowPassword = 'button.absolute.inset-y-0.right-0'; // Eye icon button
     this.btnGoogleLogin = 'button:has-text("Google")';
     this.linkForgotPassword = 'a:has-text("Quên mật khẩu")';
     this.linkSignUp = 'a:has-text("Đăng ký")';
-    this.errorMessage = '.error, [role="alert"]';
+    this.errorMessage = '.text-red-500, [role="alert"]'; // Error message class
     this.successMessage = '.success';
   }
 

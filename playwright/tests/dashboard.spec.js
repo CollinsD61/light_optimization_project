@@ -12,15 +12,15 @@ test.describe('Dashboard Tests', () => {
     
     // Login before each test
     await loginPage.navigate();
-    await loginPage.login('test@example.com', 'test123');
-    await page.waitForURL('**/mainlayout/**', { timeout: 10000 });
+    await loginPage.login('haichu321@gmail.com', 'H@ichu321');
+    await page.waitForURL(/.*\/mainlayout.*/, { timeout: 10000 });
   });
 
   test('TC011 - Dashboard should display correctly', async () => {
     await dashboardPage.navigate();
     
     expect(await dashboardPage.isDashboardDisplayed()).toBeTruthy();
-    expect(dashboardPage.getCurrentUrl()).toContain('/dashboard');
+    expect(dashboardPage.getCurrentUrl()).toContain('/Dashboard'); // Capital D
   });
 
   test('TC012 - Charts should be displayed on dashboard', async () => {

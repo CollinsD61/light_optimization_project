@@ -13,6 +13,9 @@ screenshots/
 videos/
 traces/
 
+# Debug folder (exploration scripts & screenshots)
+debug/
+
 # Reports (exclude package.json and package-lock.json)
 *.xml
 test-results/*.json

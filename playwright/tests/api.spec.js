@@ -1,16 +1,17 @@
 const { test, expect } = require('@playwright/test');
 
-const BASE_URL = process.env.API_URL || 'http://localhost:8000';
+// Backend API is accessible via subdomain api.lightoptimization.io.vn
+const BASE_URL = process.env.API_URL || 'https://api.lightoptimization.io.vn';
 
 test.describe('API Tests', () => {
   let accessToken;
 
   test.beforeAll(async ({ request }) => {
-    // Login to get access token
+    // Login to get access token with real user
     const response = await request.post(`${BASE_URL}/api/users/login/`, {
       data: {
-        email: 'test@example.com',
-        password: 'test123'
+        email: 'haichu321@gmail.com',
+        password: 'H@ichu321'
       }
     });
     
@@ -31,8 +32,8 @@ test.describe('API Tests', () => {
   test('TC032 - Login API with valid credentials', async ({ request }) => {
     const response = await request.post(`${BASE_URL}/api/users/login/`, {
       data: {
-        email: 'test@example.com',
-        password: 'test123'
+        email: 'haichu321@gmail.com',
+        password: 'H@ichu321'
       }
     });
     

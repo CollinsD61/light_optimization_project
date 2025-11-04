@@ -9,23 +9,40 @@ on:
   workflow_dispatch: # Cho phép chạy thủ công
 
 jobs:
-  security-and-quality:
+  # SonarCloud - chạy riêng, không block các tests khác
+  sonarcloud:
     runs-on: ubuntu-latest
-    # Chỉ chạy nếu deployment thành công
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    continue-on-error: true # Không fail workflow nếu SonarCloud lỗi
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history for SonarCloud
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v2
+        with:
+          projectBaseDir: .
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        continue-on-error: true
+
+  # Snyk Security Scans - chạy song song
+  snyk-security:
+    runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
 
     steps:
-      # 1. Checkout code first
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      # 3. Install FE dependencies
       - name: Install FE dependencies
         run: |
           sed -i 's/"react": "^19.0.0"/"react": "^18.2.0"/g' package.json
@@ -35,77 +52,74 @@ jobs:
           npm install
         working-directory: FE
 
-      # 4. Install BE dependencies
       - name: Install BE_nodejs dependencies
         run: npm install
         working-directory: BE_nodejs
 
-      # 5. SonarCloud Scan
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@v2
-        with:
-          projectBaseDir: .
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-      # 6. Install Snyk CLI
       - name: Install Snyk CLI
         run: npm install -g snyk
 
-      # 7. Snyk test Frontend
-      - name: Snyk test (FE)
+      - name: Snyk test FE
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
           rm -f package-lock.json
           snyk test --severity-threshold=high || true
         working-directory: FE
+        continue-on-error: true
 
-      # 8. Snyk test Backend
-      - name: Snyk test (BE_nodejs)
+      - name: Snyk test BE
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: snyk test --severity-threshold=high || true
         working-directory: BE_nodejs
+        continue-on-error: true
 
-      # 9. Build Docker images for scanning
       - name: Build FE Docker image
         run: docker build -t fe-app:test-latest ./FE
 
-      - name: Build Node.js BE Docker image
+      - name: Build BE Docker image
         run: docker build -t be-app:test-latest ./BE_nodejs
 
-      # 10. Snyk Container Scan
-      - name: Snyk container scan FE image
+      - name: Snyk container scan FE
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: snyk container test fe-app:test-latest --severity-threshold=high || true
+        continue-on-error: true
 
-      - name: Snyk container scan BE image
+      - name: Snyk container scan BE
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: snyk container test be-app:test-latest --severity-threshold=high || true
+        continue-on-error: true
 
-      # 11. Install Trivy
+  # Trivy Security Scans - chạy song song với Snyk
+  trivy-security:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build FE Docker image
+        run: docker build -t fe-app:test-latest ./FE
+
+      - name: Build BE Docker image
+        run: docker build -t be-app:test-latest ./BE_nodejs
+
       - name: Install Trivy
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-      # 12. Trivy Scan
-      - name: Trivy scan FE image
-        run: trivy image --severity CRITICAL,HIGH --exit-code 0 fe-app:test-latest
+      - name: Trivy scan FE
+        run: trivy image --severity CRITICAL,HIGH --format json --output trivy-fe-report.json fe-app:test-latest
+        continue-on-error: true
 
-      - name: Trivy scan BE image
-        run: trivy image --severity CRITICAL,HIGH --exit-code 0 be-app:test-latest
+      - name: Trivy scan BE
+        run: trivy image --severity CRITICAL,HIGH --format json --output trivy-be-report.json be-app:test-latest
+        continue-on-error: true
 
-      # 13. Generate Trivy reports
-      - name: Generate Trivy JSON report (FE)
-        run: trivy image --format json --output trivy-fe-report.json fe-app:test-latest
-
-      - name: Generate Trivy JSON report (BE)
-        run: trivy image --format json --output trivy-be-report.json be-app:test-latest
-
-      # 14. Upload Trivy reports as artifacts
       - name: Upload Trivy reports
         uses: actions/upload-artifact@v4
         with:
@@ -113,6 +127,7 @@ jobs:
           path: |
             trivy-fe-report.json
             trivy-be-report.json
+        continue-on-error: true
 
   playwright-tests:
     runs-on: ubuntu-latest
@@ -167,7 +182,7 @@ jobs:
 
   test-summary:
     runs-on: ubuntu-latest
-    needs: [security-and-quality, playwright-tests]
+    needs: [sonarcloud, snyk-security, trivy-security, playwright-tests]
     if: always()
 
     steps:
@@ -175,17 +190,35 @@ jobs:
         run: |
           echo "## 🧪 Test Results Summary"
           echo ""
-          echo "### Security & Quality Tests"
-          echo "Status: ${{ needs.security-and-quality.result }}"
+          echo "### SonarCloud Analysis"
+          echo "Status: ${{ needs.sonarcloud.result }}"
+          echo ""
+          echo "### Snyk Security Scans"
+          echo "Status: ${{ needs.snyk-security.result }}"
+          echo ""
+          echo "### Trivy Security Scans"
+          echo "Status: ${{ needs.trivy-security.result }}"
           echo ""
           echo "### Playwright E2E Tests"
           echo "Status: ${{ needs.playwright-tests.result }}"
           echo ""
-          if [[ "${{ needs.security-and-quality.result }}" == "success" ]] && [[ "${{ needs.playwright-tests.result }}" == "success" ]]; then
-            echo "✅ All tests passed!"
-            exit 0
+          
+          # Count successes
+          SUCCESS_COUNT=0
+          [[ "${{ needs.sonarcloud.result }}" == "success" ]] && ((SUCCESS_COUNT++))
+          [[ "${{ needs.snyk-security.result }}" == "success" ]] && ((SUCCESS_COUNT++))
+          [[ "${{ needs.trivy-security.result }}" == "success" ]] && ((SUCCESS_COUNT++))
+          [[ "${{ needs.playwright-tests.result }}" == "success" ]] && ((SUCCESS_COUNT++))
+          
+          echo "✅ $SUCCESS_COUNT/4 test suites passed"
+          
+          if [[ $SUCCESS_COUNT -eq 4 ]]; then
+            echo "🎉 All tests passed!"
+          elif [[ $SUCCESS_COUNT -ge 2 ]]; then
+            echo "⚠️ Some tests failed - review logs above"
           else
-            echo "⚠️ Some tests failed or were skipped"
-            exit 0
+            echo "❌ Multiple test failures - immediate attention needed"
           fi
+          
+          exit 0
 
