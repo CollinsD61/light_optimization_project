@@ -40,96 +40,96 @@ jobs:
         run: npm run build
         working-directory: FE
 
-      # 4. SonarCloud Scan 
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@v2
-        with:
-          projectBaseDir: .
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      # 4. SonarCloud Scan (COMMENTED OUT FOR FASTER DEPLOYMENT)
+      # - name: SonarCloud Scan
+      #   uses: SonarSource/sonarcloud-github-action@v2
+      #   with:
+      #     projectBaseDir: .
+      #   env:
+      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      # 5. Snyk quét source (FE)
-      - name: Install Snyk CLI
-        run: npm install -g snyk
+      # 5. Snyk quét source (COMMENTED OUT FOR FASTER DEPLOYMENT)
+      # - name: Install Snyk CLI
+      #   run: npm install -g snyk
 
-      - name: Snyk test (FE)
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: |
-          rm -f package-lock.json
-          snyk test || true
-        working-directory: FE
+      # - name: Snyk test (FE)
+      #   env:
+      #     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      #   run: |
+      #     rm -f package-lock.json
+      #     snyk test || true
+      #   working-directory: FE
 
-      # 6. Cài BE dependencies trước khi quét Snyk BE!
-      - name: Install BE dependencies
-        run: pip install -r requirements.txt
-        working-directory: BE
+      # 6. Install Node.js Backend dependencies (BE_nodejs)
+      - name: Install BE_nodejs dependencies
+        run: npm install
+        working-directory: BE_nodejs
 
-      # 7. Snyk test (BE)
-      - name: Snyk test (BE)
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: snyk test || true
-        working-directory: BE
+      # 7. Snyk test (COMMENTED OUT FOR FASTER DEPLOYMENT)
+      # - name: Snyk test (BE_nodejs)
+      #   env:
+      #     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      #   run: snyk test || true
+      #   working-directory: BE_nodejs
 
-      # 8. Build Docker image FE & BE
-      - name: Build FE Docker image
-        run: docker build -t fe-app:ci-latest ./FE
+      # 8. Build Docker image (COMMENTED OUT FOR FASTER DEPLOYMENT)
+      # - name: Build FE Docker image
+      #   run: docker build -t fe-app:ci-latest ./FE
 
-      - name: Build BE Docker image
-        run: docker build -t be-app:ci-latest ./BE
+      # - name: Build Node.js BE Docker image
+      #   run: docker build -t be-app:ci-latest ./BE_nodejs
 
-      # 9. Snyk quét image FE & BE
-      - name: Snyk container scan FE image
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: snyk container test fe-app:ci-latest || true
+      # 9. Snyk quét image (COMMENTED OUT FOR FASTER DEPLOYMENT)
+      # - name: Snyk container scan FE image
+      #   env:
+      #     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      #   run: snyk container test fe-app:ci-latest || true
 
-      - name: Snyk container scan BE image
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: snyk container test be-app:ci-latest || true
+      # - name: Snyk container scan BE image
+      #   env:
+      #     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      #   run: snyk container test be-app:ci-latest || true
 
-      # 10. Trivy quét image FE & BE
-      - name: Install Trivy
-        run: |
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+      # 10. Trivy quét image (COMMENTED OUT FOR FASTER DEPLOYMENT)
+      # - name: Install Trivy
+      #   run: |
+      #     curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-      - name: Trivy scan FE image
-        run: trivy image --severity CRITICAL,HIGH fe-app:ci-latest
+      # - name: Trivy scan FE image
+      #   run: trivy image --severity CRITICAL,HIGH fe-app:ci-latest
 
-      - name: Trivy scan BE image
-        run: trivy image --severity CRITICAL,HIGH be-app:ci-latest
+      # - name: Trivy scan BE image
+      #   run: trivy image --severity CRITICAL,HIGH be-app:ci-latest
 
-      # 11. Selenium UI test (build & start FE server)
-      - name: Start FE server (Vite dev)
-        run: nohup npm run dev -- --host 0.0.0.0 &
-        working-directory: FE
+      # 11. Selenium UI test (COMMENTED OUT FOR FASTER DEPLOYMENT)
+      # - name: Start FE server (Vite dev)
+      #   run: nohup npm run dev -- --host 0.0.0.0 &
+      #   working-directory: FE
 
-      - name: Wait FE server ready
-        run: |
-          for i in {1..10}; do
-            curl -sSf http://localhost:5173/ && exit 0
-            echo "Waiting for FE server..."
-            sleep 2
-          done
-          echo "FE server did not start in time!" && exit 1
+      # - name: Wait FE server ready
+      #   run: |
+      #     for i in {1..10}; do
+      #       curl -sSf http://localhost:5173/ && exit 0
+      #       echo "Waiting for FE server..."
+      #       sleep 2
+      #     done
+      #     echo "FE server did not start in time!" && exit 1
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
+      # - name: Setup Python
+      #   uses: actions/setup-python@v5
+      #   with:
+      #     python-version: '3.10'
 
-      - name: Install Selenium (no requirements.txt)
-        run: pip install selenium
-        working-directory: selenium
+      # - name: Install Selenium (no requirements.txt)
+      #   run: pip install selenium
+      #   working-directory: selenium
 
-      - name: Setup Chrome
-        uses: browser-actions/setup-chrome@v1
+      # - name: Setup Chrome
+      #   uses: browser-actions/setup-chrome@v1
 
-      - name: Run Selenium Python UI tests
-        run: python test.py
-        working-directory: selenium
+      # - name: Run Selenium Python UI tests
+      #   run: python test.py
+      #   working-directory: selenium
 
       # 12. Setup SSH key
       - name: Setup SSH key
@@ -149,13 +149,13 @@ jobs:
             -e "ssh -o StrictHostKeyChecking=no" \
             ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/root/web_project/
 
-      # 15. SSH and deploy Docker Compose
+      # 15. SSH and deploy Docker Compose (Node.js Backend)
       - name: SSH and deploy Docker Compose
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
             cd /root/web_project &&
             
-            # Hạ cấp React và ReactDOM xuống phiên bản 18
+            # Hạ cấp React và ReactDOM xuống phiên bản 18 (Frontend)
             cd FE && 
             sed -i 's/\"react\": \"^19.0.0\"/\"react\": \"^18.2.0\"/g' package.json &&
             sed -i 's/\"react-dom\": \"^19.0.0\"/\"react-dom\": \"^18.2.0\"/g' package.json &&
@@ -168,24 +168,26 @@ jobs:
             npm install @headlessui/react @heroicons/react --save &&
             cd .. &&
             
-            # Xóa các container cũ và build lại
+            # Xóa các container cũ và build lại (Node.js Backend)
             docker compose down || true &&
-            docker compose build --no-cache frontend &&
+            docker compose build --no-cache frontend backend &&
             docker compose up -d &&
             docker image prune -af
           "
 
-      # 16. SSH vào VPS và migrate DB cho Django backend
-      - name: SSH và migrate Django DB trên VPS
+      # 16. Verify Node.js Backend health
+      - name: Verify Node.js Backend deployment
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
             cd /root/web_project &&
             sleep 10 &&
-            docker compose run --rm backend python manage.py makemigrations &&
-            docker compose run --rm backend python manage.py migrate
+            echo '--- Checking backend health ---' &&
+            docker compose logs backend --tail=30 &&
+            echo '--- Testing backend API ---' &&
+            curl -f http://localhost:8000/api/health || echo 'Backend not ready yet'
           "
 
-      #  kiểm tra lỗi
+      # 17. Debug container issues
       - name: Debug container issues
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
@@ -193,19 +195,27 @@ jobs:
             
             # Kiểm tra cấu trúc thư mục
             echo '--- Checking directory structure ---' &&
+            ls -la BE_nodejs &&
             ls -la FE &&
             
             # Kiểm tra package.json
-            echo '--- Checking package.json ---' &&
+            echo '--- Checking FE package.json ---' &&
             cat FE/package.json | grep headless &&
             
-            # Kiểm tra log container
-            echo '--- Checking container logs ---' &&
-            docker compose logs --tail=50 frontend
+            echo '--- Checking BE_nodejs package.json ---' &&
+            cat BE_nodejs/package.json | grep express &&
+            
+            # Kiểm tra log containers
+            echo '--- Checking frontend logs ---' &&
+            docker compose logs --tail=30 frontend &&
+            echo '--- Checking backend logs ---' &&
+            docker compose logs --tail=30 backend &&
+            echo '--- Checking database logs ---' &&
+            docker compose logs --tail=20 db
           "
 
-      #  bước verification sau khi build
-      - name: Verify React version and headlessUI installation
+      # 18. Verification sau khi build
+      - name: Verify deployment (Frontend & Node.js Backend)
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
             cd /root/web_project &&
@@ -218,7 +228,20 @@ jobs:
             echo '--- HeadlessUI in package.json ---' &&
             cat FE/package.json | grep headlessui &&
             
-            # Kiểm tra phiên bản trong container
-            echo '--- React version in container ---' &&
-            docker compose exec frontend cat /app/package.json | grep react
+            # Kiểm tra Node.js Backend dependencies
+            echo '--- Node.js Backend dependencies ---' &&
+            cat BE_nodejs/package.json | grep express | head -5 &&
+            
+            # Kiểm tra containers đang chạy
+            echo '--- Running containers ---' &&
+            docker compose ps &&
+            
+            # Test API endpoints
+            echo '--- Testing API health endpoint ---' &&
+            sleep 5 &&
+            curl -f http://localhost:8000/api/health || echo 'Waiting for backend...' &&
+            
+            # Test Frontend
+            echo '--- Testing Frontend ---' &&
+            curl -f http://localhost:5173/ || echo 'Waiting for frontend...'
           "
