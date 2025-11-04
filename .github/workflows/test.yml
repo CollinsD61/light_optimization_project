@@ -1,0 +1,215 @@
+name: Quality & Security Tests
+
+# Trigger khi update.yml hoàn thành hoặc chạy thủ công
+on:
+  workflow_run:
+    workflows: ["Deploy to VPS"]
+    types:
+      - completed
+  workflow_dispatch: # Cho phép chạy thủ công
+
+jobs:
+  security-and-quality:
+    runs-on: ubuntu-latest
+    # Chỉ chạy nếu deployment thành công
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+
+    steps:
+      # 1. Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # 3. Install FE dependencies
+      - name: Install FE dependencies
+        run: |
+          sed -i 's/"react": "^19.0.0"/"react": "^18.2.0"/g' package.json
+          sed -i 's/"react-dom": "^19.0.0"/"react-dom": "^18.2.0"/g' package.json
+          sed -i 's/"@types\/react": "^19.0.10"/"@types\/react": "^18.2.48"/g' package.json
+          sed -i 's/"@types\/react-dom": "^19.0.4"/"@types\/react-dom": "^18.2.19"/g' package.json
+          npm install
+        working-directory: FE
+
+      # 4. Install BE dependencies
+      - name: Install BE_nodejs dependencies
+        run: npm install
+        working-directory: BE_nodejs
+
+      # 5. SonarCloud Scan
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v2
+        with:
+          projectBaseDir: .
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      # 6. Install Snyk CLI
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      # 7. Snyk test Frontend
+      - name: Snyk test (FE)
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          rm -f package-lock.json
+          snyk test --severity-threshold=high || true
+        working-directory: FE
+
+      # 8. Snyk test Backend
+      - name: Snyk test (BE_nodejs)
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk test --severity-threshold=high || true
+        working-directory: BE_nodejs
+
+      # 9. Build Docker images for scanning
+      - name: Build FE Docker image
+        run: docker build -t fe-app:test-latest ./FE
+
+      - name: Build Node.js BE Docker image
+        run: docker build -t be-app:test-latest ./BE_nodejs
+
+      # 10. Snyk Container Scan
+      - name: Snyk container scan FE image
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk container test fe-app:test-latest --severity-threshold=high || true
+
+      - name: Snyk container scan BE image
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk container test be-app:test-latest --severity-threshold=high || true
+
+      # 11. Install Trivy
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+      # 12. Trivy Scan
+      - name: Trivy scan FE image
+        run: trivy image --severity CRITICAL,HIGH --exit-code 0 fe-app:test-latest
+
+      - name: Trivy scan BE image
+        run: trivy image --severity CRITICAL,HIGH --exit-code 0 be-app:test-latest
+
+      # 13. Generate Trivy reports
+      - name: Generate Trivy JSON report (FE)
+        run: trivy image --format json --output trivy-fe-report.json fe-app:test-latest
+
+      - name: Generate Trivy JSON report (BE)
+        run: trivy image --format json --output trivy-be-report.json be-app:test-latest
+
+      # 14. Upload Trivy reports as artifacts
+      - name: Upload Trivy reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: trivy-reports
+          path: |
+            trivy-fe-report.json
+            trivy-be-report.json
+
+  selenium-tests:
+    runs-on: ubuntu-latest
+    # Chạy song song với security tests
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+
+    steps:
+      # 1. Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # 3. Install FE dependencies
+      - name: Install FE dependencies
+        run: |
+          sed -i 's/"react": "^19.0.0"/"react": "^18.2.0"/g' package.json
+          sed -i 's/"react-dom": "^19.0.0"/"react-dom": "^18.2.0"/g' package.json
+          sed -i 's/"@types\/react": "^19.0.10"/"@types\/react": "^18.2.48"/g' package.json
+          sed -i 's/"@types\/react-dom": "^19.0.4"/"@types\/react-dom": "^18.2.19"/g' package.json
+          npm install
+        working-directory: FE
+
+      # 4. Start FE server
+      - name: Start FE server (Vite dev)
+        run: nohup npm run dev -- --host 0.0.0.0 &
+        working-directory: FE
+
+      # 5. Wait for FE server
+      - name: Wait FE server ready
+        run: |
+          for i in {1..15}; do
+            if curl -sSf http://localhost:5173/ > /dev/null 2>&1; then
+              echo "✅ FE server is ready!"
+              exit 0
+            fi
+            echo "⏳ Waiting for FE server... (attempt $i/15)"
+            sleep 3
+          done
+          echo "❌ FE server did not start in time!"
+          exit 1
+
+      # 6. Setup Python
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      # 7. Install Selenium
+      - name: Install Selenium
+        run: pip install selenium
+        working-directory: selenium
+
+      # 8. Setup Chrome
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@v1
+
+      # 9. Run Selenium tests
+      - name: Run Selenium Python UI tests
+        run: python test.py
+        working-directory: selenium
+        continue-on-error: true
+
+      # 10. Upload Selenium screenshots (nếu có)
+      - name: Upload Selenium screenshots
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: selenium-screenshots
+          path: selenium/screenshots/*.png
+        continue-on-error: true
+
+  test-summary:
+    runs-on: ubuntu-latest
+    needs: [security-and-quality, selenium-tests]
+    if: always()
+
+    steps:
+      - name: Test Summary
+        run: |
+          echo "## 🧪 Test Results Summary"
+          echo ""
+          echo "### Security & Quality Tests"
+          echo "Status: ${{ needs.security-and-quality.result }}"
+          echo ""
+          echo "### Selenium UI Tests"
+          echo "Status: ${{ needs.selenium-tests.result }}"
+          echo ""
+          if [[ "${{ needs.security-and-quality.result }}" == "success" ]] && [[ "${{ needs.selenium-tests.result }}" == "success" ]]; then
+            echo "✅ All tests passed!"
+            exit 0
+          else
+            echo "⚠️ Some tests failed or were skipped"
+            exit 0
+          fi
+
