@@ -38,8 +38,8 @@ const getSensorData = async (req, res, next) => {
 
     const { count, rows } = await db.SensorData.findAndCountAll({
       where,
-      limit,
-      offset,
+      limit: 10000, // Tăng limit để lấy nhiều data cho frontend
+      offset: 0,
       order,
       include: [{
         model: db.Sensor,
@@ -50,12 +50,9 @@ const getSensorData = async (req, res, next) => {
 
     console.log(`Số lượng SensorData tìm thấy: ${count}`);
 
-    res.json({
-      count,
-      results: rows,
-      next: page * limit < count ? page + 1 : null,
-      previous: page > 1 ? page - 1 : null
-    });
+    // Trả về trực tiếp array để frontend tương thích
+    // Frontend expect response.data là array, không phải object với results
+    res.json(rows);
   } catch (error) {
     next(error);
   }
