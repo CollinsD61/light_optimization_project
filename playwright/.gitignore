@@ -13,9 +13,10 @@ screenshots/
 videos/
 traces/
 
-# Reports
+# Reports (exclude package.json and package-lock.json)
 *.xml
-*.json
+test-results/*.json
+playwright-report/*.json
 
 # OS
 .DS_Store

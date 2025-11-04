@@ -14,33 +14,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Setup Node.js cho FE
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      # 3. Install FE dependencies
-      - name: Install FE dependencies
-        run: |
-          # Hạ cấp React trước khi cài đặt dependencies
-          sed -i 's/\"react\": \"^19.0.0\"/\"react\": \"^18.2.0\"/g' package.json
-          sed -i 's/\"react-dom\": \"^19.0.0\"/\"react-dom\": \"^18.2.0\"/g' package.json
-          sed -i 's/\"@types\/react\": \"^19.0.10\"/\"@types\/react\": \"^18.2.48\"/g' package.json
-          sed -i 's/\"@types\/react-dom\": \"^19.0.4\"/\"@types\/react-dom\": \"^18.2.19\"/g' package.json
-          # Cài đặt dependencies
-          npm install
-        working-directory: FE
-
-      - name: Lint FE
-        run: npm run lint || true
-        working-directory: FE
-
-      - name: Build FE
-        run: npm run build
-        working-directory: FE
-
-      # Setup SSH key
+      # 2. Setup SSH key
       - name: Setup SSH key
         uses: webfactory/ssh-agent@v0.8.0
         with:
