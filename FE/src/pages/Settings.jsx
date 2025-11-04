@@ -151,9 +151,9 @@ const Settings = () => {
                         {/* Temperature unit */}
                         <div className="py-4 border-b border-gray-100 dark:border-gray-700">
                             <h3 className="text-md font-medium text-gray-800 dark:text-white mb-2">Đơn vị nhiệt độ</h3>
-                            <div className="flex space-x-2">
+                            <div className="grid grid-cols-2 gap-2">
                                 <button
-                                    className={`px-3 py-1.5 rounded-md ${temperatureUnit === 'celsius'
+                                    className={`px-3 py-2 text-sm sm:text-base rounded-md transition-colors ${temperatureUnit === 'celsius'
                                         ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'
                                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                                     onClick={() => setTemperatureUnit('celsius')}
@@ -161,7 +161,7 @@ const Settings = () => {
                                     Celsius (°C)
                                 </button>
                                 <button
-                                    className={`px-3 py-1.5 rounded-md ${temperatureUnit === 'fahrenheit'
+                                    className={`px-3 py-2 text-sm sm:text-base rounded-md transition-colors ${temperatureUnit === 'fahrenheit'
                                         ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'
                                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                                     onClick={() => setTemperatureUnit('fahrenheit')}

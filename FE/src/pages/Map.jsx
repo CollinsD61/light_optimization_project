@@ -554,28 +554,6 @@ const forceSyncBattery = async () => {
   }
 };
 
-  // Thêm function test battery calculation
-const testBatteryCalculation = async () => {
-  try {
-    console.log('=== TESTING BATTERY CALCULATION ===');
-    const batteryData = await BatteryService.getBattery('hcm-device-01');
-    
-    if (batteryData) {
-      console.log('Current Firebase data:', batteryData);
-      
-      // Test với timestamp giả (1 giờ trước)
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-      const calculatedBattery = BatteryService.calculateBatteryLevel(oneHourAgo, batteryData.level);
-      
-      console.log('If last update was 1 hour ago:');
-      console.log('Original:', batteryData.level + '%');
-      console.log('After 1 hour:', calculatedBattery + '%');
-      console.log('Difference:', (batteryData.level - calculatedBattery) + '%');
-    }
-  } catch (error) {
-    console.error('Error testing battery calculation:', error);
-  }
-};
 
   return (
     <div className="p-6 bg-gradient-to-br from-gray-800 to-gray-900 min-h-screen">
@@ -593,10 +571,10 @@ const testBatteryCalculation = async () => {
         </p>
       </div>
 
-      {/* Control Panel */}
-      <div className="mb-6 grid grid-cols-1 lg:grid-cols-4 gap-4">
-        {/* Search & Filter */}
-        <div className="lg:col-span-2 flex flex-col sm:flex-row gap-3">
+      {/* Control Panel - Responsive Grid */}
+      <div className="mb-6 space-y-4">
+        {/* Row 1: Search & Filter */}
+        <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <input 
               type="text" 
@@ -689,60 +667,52 @@ const testBatteryCalculation = async () => {
           </div>
         </div>
         
-        {/* Map Style Selection */}
-        <div className="flex gap-3">
+        {/* Row 2: Map Style Selection */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {Object.keys(mapTiles).map(style => (
             <button
               key={style}
               onClick={() => setMapStyle(style)}
-              className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 ${
+              className={`py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 ${
                 mapStyle === style 
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
                   : 'bg-gray-700/60 text-gray-300 hover:bg-gray-600/60'
               }`}
             >
               <Layers size={16} />
-              <span>{mapTiles[style].name}</span>
+              <span className="hidden sm:inline">{mapTiles[style].name}</span>
+              <span className="sm:hidden">{mapTiles[style].name.split(' ')[0]}</span>
             </button>
           ))}
         </div>
         
-        {/* Actions - loại bỏ nút test */}
-        <div className="flex gap-3">
+        {/* Row 3: Actions - Responsive buttons */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <button 
             onClick={loadSensorData}
-            className="flex-1 py-3 bg-gray-700/60 hover:bg-gray-600/60 backdrop-blur-sm border border-gray-600/60 rounded-xl text-white flex items-center justify-center gap-2 transition-all duration-300"
+            className="py-3 px-4 bg-gray-700/60 hover:bg-gray-600/60 backdrop-blur-sm border border-gray-600/60 rounded-xl text-white flex items-center justify-center gap-2 transition-all duration-300"
           >
             <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-            <span>{isLoading ? 'Đang tải...' : 'Làm mới'}</span>
+            <span className="hidden sm:inline">{isLoading ? 'Đang tải...' : 'Làm mới'}</span>
+            <span className="sm:hidden">Tải</span>
           </button>
           
           <button 
             onClick={forceSyncBattery}
-            className="flex-1 py-3 bg-purple-700/60 hover:bg-purple-600/60 backdrop-blur-sm border border-purple-600/60 rounded-xl text-white flex items-center justify-center gap-2 transition-all duration-300"
+            className="py-3 px-4 bg-purple-700/60 hover:bg-purple-600/60 backdrop-blur-sm border border-purple-600/60 rounded-xl text-white flex items-center justify-center gap-2 transition-all duration-300"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-    </svg>
-            <span>Đồng bộ pin</span>
-          </button>
-
-          {/* Nút test calculation */}
-          <button 
-            onClick={testBatteryCalculation}
-            className="flex-1 py-3 bg-indigo-700/60 hover:bg-indigo-600/60 backdrop-blur-sm border border-indigo-600/60 rounded-xl text-white flex items-center justify-center gap-2 transition-all duration-300"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-    </svg>
-            <span>Test tính toán</span>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span className="hidden sm:inline">Đồng bộ pin</span>
+            <span className="sm:hidden">Pin</span>
           </button>
           
           <button 
             onClick={() => {
               alert('Chức năng thêm cảm biến mới sẽ được phát triển trong phiên bản tiếp theo');
             }}
-            className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl text-white flex items-center justify-center gap-2 transition-all duration-300"
+            className="col-span-2 md:col-span-2 py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl text-white flex items-center justify-center gap-2 transition-all duration-300"
           >
             <PlusCircle size={16} />
             <span>Thêm cảm biến</span>
