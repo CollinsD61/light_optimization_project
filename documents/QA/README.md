@@ -41,6 +41,15 @@ GitHub Actions CI/CD workflows:
 - Best practices
 - Troubleshooting
 
+### 5. [PLAYWRIGHT_PRODUCTION_TESTING.md](PLAYWRIGHT_PRODUCTION_TESTING.md) 🌐
+Production testing configuration:
+- Test trực tiếp trên `https://lightoptimization.io.vn`
+- Benefits của production testing
+- Configuration changes
+- CI/CD optimization (~50% faster)
+- Best practices & warnings
+- Rollback instructions
+
 ---
 
 ## 🚀 Quick Start

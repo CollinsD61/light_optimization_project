@@ -130,49 +130,20 @@ jobs:
         with:
           node-version: '20'
 
-      # 3. Install FE dependencies
-      - name: Install FE dependencies
-        run: |
-          sed -i 's/"react": "^19.0.0"/"react": "^18.2.0"/g' package.json
-          sed -i 's/"react-dom": "^19.0.0"/"react-dom": "^18.2.0"/g' package.json
-          sed -i 's/"@types\/react": "^19.0.10"/"@types\/react": "^18.2.48"/g' package.json
-          sed -i 's/"@types\/react-dom": "^19.0.4"/"@types\/react-dom": "^18.2.19"/g' package.json
-          npm install
-        working-directory: FE
-
-      # 4. Start FE server
-      - name: Start FE server (Vite dev)
-        run: nohup npm run dev -- --host 0.0.0.0 &
-        working-directory: FE
-
-      # 5. Wait for FE server
-      - name: Wait FE server ready
-        run: |
-          for i in {1..15}; do
-            if curl -sSf http://localhost:5173/ > /dev/null 2>&1; then
-              echo "✅ FE server is ready!"
-              exit 0
-            fi
-            echo "⏳ Waiting for FE server... (attempt $i/15)"
-            sleep 3
-          done
-          echo "❌ FE server did not start in time!"
-          exit 1
-
-      # 6. Install Playwright dependencies
+      # 3. Install Playwright dependencies
       - name: Install Playwright dependencies
         run: |
           npm install
           npx playwright install --with-deps chromium
         working-directory: playwright
 
-      # 7. Run Playwright tests
+      # 4. Run Playwright E2E tests on Production
       - name: Run Playwright E2E tests
         run: npx playwright test --project=chromium
         working-directory: playwright
         env:
-          BASE_URL: http://localhost:5173
-          API_URL: http://localhost:8000
+          BASE_URL: https://lightoptimization.io.vn
+          API_URL: https://lightoptimization.io.vn/api
         continue-on-error: true
 
       # 8. Upload Playwright report

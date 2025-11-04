@@ -35,7 +35,9 @@ npx playwright install
 
 ### 2. Configure environment (optional)
 
-Create `.env` file:
+Default test target: **Production** (`https://lightoptimization.io.vn`)
+
+To test locally, create `.env` file:
 
 ```env
 BASE_URL=http://localhost:5173
