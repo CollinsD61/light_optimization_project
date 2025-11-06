@@ -203,22 +203,23 @@ jobs:
           echo "Status: ${{ needs.playwright-tests.result }}"
           echo ""
           
-          # Count successes
+          # Count successes (treat skipped as success since sonarcloud uses continue-on-error)
           SUCCESS_COUNT=0
-          [[ "${{ needs.sonarcloud.result }}" == "success" ]] && ((SUCCESS_COUNT++))
-          [[ "${{ needs.snyk-security.result }}" == "success" ]] && ((SUCCESS_COUNT++))
-          [[ "${{ needs.trivy-security.result }}" == "success" ]] && ((SUCCESS_COUNT++))
-          [[ "${{ needs.playwright-tests.result }}" == "success" ]] && ((SUCCESS_COUNT++))
+          [[ "${{ needs.sonarcloud.result }}" == "success" || "${{ needs.sonarcloud.result }}" == "skipped" ]] && ((SUCCESS_COUNT++)) || true
+          [[ "${{ needs.snyk-security.result }}" == "success" ]] && ((SUCCESS_COUNT++)) || true
+          [[ "${{ needs.trivy-security.result }}" == "success" ]] && ((SUCCESS_COUNT++)) || true
+          [[ "${{ needs.playwright-tests.result }}" == "success" ]] && ((SUCCESS_COUNT++)) || true
           
           echo "✅ $SUCCESS_COUNT/4 test suites passed"
           
           if [[ $SUCCESS_COUNT -eq 4 ]]; then
             echo "🎉 All tests passed!"
+            exit 0
           elif [[ $SUCCESS_COUNT -ge 2 ]]; then
             echo "⚠️ Some tests failed - review logs above"
+            exit 0
           else
             echo "❌ Multiple test failures - immediate attention needed"
+            exit 1
           fi
-          
-          exit 0
 

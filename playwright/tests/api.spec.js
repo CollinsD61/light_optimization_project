@@ -8,7 +8,7 @@ test.describe('API Tests', () => {
 
   test.beforeAll(async ({ request }) => {
     // Login to get access token with real user
-    const response = await request.post(`${BASE_URL}/api/users/login/`, {
+    const response = await request.post(`${BASE_URL}/api/users/login`, {
       data: {
         email: 'haichu321@gmail.com',
         password: 'H@ichu321'
@@ -30,7 +30,7 @@ test.describe('API Tests', () => {
   });
 
   test('TC032 - Login API with valid credentials', async ({ request }) => {
-    const response = await request.post(`${BASE_URL}/api/users/login/`, {
+    const response = await request.post(`${BASE_URL}/api/users/login`, {
       data: {
         email: 'haichu321@gmail.com',
         password: 'H@ichu321'
@@ -44,7 +44,7 @@ test.describe('API Tests', () => {
   });
 
   test('TC033 - Login API with invalid credentials', async ({ request }) => {
-    const response = await request.post(`${BASE_URL}/api/users/login/`, {
+    const response = await request.post(`${BASE_URL}/api/users/login`, {
       data: {
         email: 'invalid@email.com',
         password: 'wrongpass'
@@ -60,7 +60,7 @@ test.describe('API Tests', () => {
       return;
     }
 
-    const response = await request.get(`${BASE_URL}/api/sensor-data/`, {
+    const response = await request.get(`${BASE_URL}/api/sensor-data`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`
       }
@@ -72,13 +72,13 @@ test.describe('API Tests', () => {
   });
 
   test('TC035 - Get sensor data without authentication', async ({ request }) => {
-    const response = await request.get(`${BASE_URL}/api/sensor-data/`);
+    const response = await request.get(`${BASE_URL}/api/sensor-data`);
     
     expect(response.status()).toBe(401);
   });
 
   test('TC036 - Send sensor data to IoT endpoint', async ({ request }) => {
-    const response = await request.post(`${BASE_URL}/api/receive-data/`, {
+    const response = await request.post(`${BASE_URL}/api/receive-data`, {
       data: {
         sensor_name: 'test-sensor-playwright',
         light_value: 500,
@@ -99,7 +99,7 @@ test.describe('API Tests', () => {
       return;
     }
 
-    const response = await request.get(`${BASE_URL}/api/sensors/`, {
+    const response = await request.get(`${BASE_URL}/api/sensors`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`
       }
@@ -111,7 +111,7 @@ test.describe('API Tests', () => {
   test('TC038 - Register new user', async ({ request }) => {
     const randomEmail = `test_${Date.now()}@example.com`;
     
-    const response = await request.post(`${BASE_URL}/api/users/register/`, {
+    const response = await request.post(`${BASE_URL}/api/users/register`, {
       data: {
         email: randomEmail,
         password: 'testpass123'
