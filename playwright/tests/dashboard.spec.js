@@ -7,13 +7,22 @@ test.describe('Dashboard Tests', () => {
   let dashboardPage;
 
   test.beforeEach(async ({ page }) => {
+    console.log('🔧 Setting up test - navigating to login page');
     loginPage = new LoginPage(page);
     dashboardPage = new DashboardPage(page);
     
     // Login before each test
     await loginPage.navigate();
+    console.log('✅ Login page loaded');
+    
     await loginPage.login('haichu321@gmail.com', 'H@ichu321');
-    await page.waitForURL(/.*\/mainlayout.*/, { timeout: 10000 });
+    console.log('🔑 Login credentials submitted');
+    
+    // Wait for navigation with longer timeout on CI
+    const timeout = process.env.CI ? 30000 : 15000;
+    await page.waitForURL(/.*\/mainlayout.*/, { timeout });
+    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    console.log('✅ Login successful, mainlayout loaded');
   });
 
   test('TC011 - Dashboard should display correctly', async () => {
@@ -24,10 +33,12 @@ test.describe('Dashboard Tests', () => {
   });
 
   test('TC012 - Charts should be displayed on dashboard', async () => {
+    console.log('📊 Testing charts display');
     await dashboardPage.navigate();
-    await dashboardPage.wait(3000); // Wait for data to load
+    console.log('✅ Dashboard navigated, checking for charts');
     
     expect(await dashboardPage.areChartsDisplayed()).toBeTruthy();
+    console.log('✅ Charts are displayed');
   });
 
   test('TC013 - Filter data by 1 day', async () => {
@@ -47,11 +58,13 @@ test.describe('Dashboard Tests', () => {
   });
 
   test('TC015 - Filter data by 30 days', async () => {
+    console.log('📆 Testing 30 days filter');
     await dashboardPage.navigate();
     await dashboardPage.clickQuickFilter('30days');
+    console.log('✅ 30 days filter clicked');
     
-    await dashboardPage.wait(2000);
     expect(await dashboardPage.areChartsDisplayed()).toBeTruthy();
+    console.log('✅ Charts displayed after filter');
   });
 
   test('TC016 - Filter data by custom date range', async () => {

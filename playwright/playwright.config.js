@@ -7,11 +7,11 @@ const { defineConfig, devices } = require('@playwright/test');
 module.exports = defineConfig({
   testDir: './tests',
   
-  /* Maximum time one test can run for */
-  timeout: 30 * 1000,
+  /* Maximum time one test can run for - increased for CI */
+  timeout: process.env.CI ? 60 * 1000 : 30 * 1000, // 60s on CI, 30s locally
   
   /* Run tests in files in parallel */
-  fullyParallel: true,
+  fullyParallel: false, // Disabled for sequential execution
   
   /* Fail the build on CI if you accidentally left test.only in the source code */
   forbidOnly: !!process.env.CI,
@@ -19,8 +19,8 @@ module.exports = defineConfig({
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
   
-  /* Run tests in parallel on CI with multiple workers */
-  workers: process.env.CI ? 4 : undefined,
+  /* Run tests sequentially - 1 worker */
+  workers: 1,
   
   /* Reporter to use */
   reporter: [
@@ -45,6 +45,12 @@ module.exports = defineConfig({
     
     /* Viewport */
     viewport: { width: 1280, height: 720 },
+    
+    /* Increase action timeout on CI */
+    actionTimeout: process.env.CI ? 15000 : 10000,
+    
+    /* Increase navigation timeout on CI */
+    navigationTimeout: process.env.CI ? 30000 : 15000,
     
     /* Ensure Playwright User-Agent is preserved for rate limiting skip */
     extraHTTPHeaders: {

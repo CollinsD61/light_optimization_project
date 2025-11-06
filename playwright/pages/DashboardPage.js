@@ -57,8 +57,9 @@ class DashboardPage extends BasePage {
    */
   async navigate() {
     await this.goto('/mainlayout/Dashboard'); // Capital D!
-    await this.waitForElement('#root > *'); // Wait for React to mount
-    await this.wait(2000); // Wait for data to load
+    await this.page.waitForLoadState('domcontentloaded');
+    await this.waitForElement(this.titleMain, 10000); // Wait for title to be visible
+    await this.page.waitForLoadState('networkidle', { timeout: 15000 }); // Wait for API calls
   }
 
   /**
@@ -93,8 +94,9 @@ class DashboardPage extends BasePage {
     
     const selector = filterMap[filter];
     if (selector) {
+      await this.waitForElement(selector, 15000); // Wait for button to be visible
       await this.click(selector);
-      await this.wait(1000); // Wait for data to load
+      await this.page.waitForLoadState('networkidle', { timeout: 15000 }); // Wait for data to load
     }
   }
 

@@ -43,7 +43,8 @@ class LoginPage extends BasePage {
    * @returns {Promise<boolean>}
    */
   async isLoginSuccessful() {
-    await this.wait(2000); // Wait for token to be set
+    // Wait for navigation or token to be set
+    await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
     const token = await this.getLocalStorageItem('access_token');
     return token !== null && token !== '';
   }
