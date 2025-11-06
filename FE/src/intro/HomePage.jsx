@@ -727,7 +727,7 @@ Nghiên cứu này chứng minh tiềm năng của công nghệ cảm biến hi�
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 mr-3 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                     </svg>
-                                    Email Us @ Light Optimization
+                                    Email Us Now
                                 </h3>
                                 <div className="space-y-4 text-base sm:text-lg text-gray-800 flex-grow">
                                     <div className="flex items-center hover:bg-blue-50 p-3 rounded-md transition-all duration-300 border border-transparent hover:border-blue-100">
