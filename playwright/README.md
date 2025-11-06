@@ -1,357 +1,272 @@
-# 🎭 Playwright E2E Testing Framework
+# Playwright Test Suite Organization
 
-Playwright testing framework với Page Object Model cho dự án Web Sensor Monitoring.
+## 📋 Test Categories
 
-## 📂 Cấu trúc folder
+Our tests are organized into 4 main categories using tags:
 
-```
-playwright/
-├── pages/                  # Page Object Models
-│   ├── BasePage.js        # Base class cho tất cả pages
-│   ├── LoginPage.js       # Login page
-│   ├── SignUpPage.js      # Sign up page
-│   ├── DashboardPage.js   # Dashboard page
-│   └── MapPage.js         # Map page
-├── tests/                  # Test specifications
-│   ├── auth.spec.js       # Authentication tests (TC001-TC010)
-│   ├── dashboard.spec.js  # Dashboard tests (TC011-TC025)
-│   ├── map.spec.js        # Map tests (TC026-TC030)
-│   └── api.spec.js        # API tests (TC031-TC040)
-├── test-results/          # Test results & reports
-├── playwright.config.js   # Playwright configuration
-├── package.json           # Dependencies
-└── README.md             # This file
-```
+### 🔥 Smoke Tests (`@smoke`)
+- **Purpose**: Quick sanity checks for critical functionality
+- **Duration**: ~1-2 minutes
+- **When to run**: Before every deployment, after every commit
+- **Includes**:
+  - API health checks
+  - Login functionality
+  - Basic authentication
+  - Critical user flows
 
-## 🚀 Setup
+### 🔌 API Tests (`@api`)
+- **Purpose**: Backend API endpoint validation
+- **Duration**: ~30 seconds
+- **When to run**: After API changes, in CI/CD pipeline
+- **Includes**:
+  - All `/api/*` endpoints
+  - Authentication endpoints
+  - Sensor data endpoints
+  - CORS and security headers
 
-### 1. Install dependencies
+### 🌐 E2E Tests (`@e2e`)
+- **Purpose**: End-to-end user journeys
+- **Duration**: ~3-5 minutes
+- **When to run**: Before major releases, nightly builds
+- **Includes**:
+  - Full authentication flows
+  - Dashboard interactions
+  - Navigation between pages
+  - User session management
 
+### 🔄 Regression Tests (`@regression`)
+- **Purpose**: Comprehensive test coverage
+- **Duration**: ~5-10 minutes
+- **When to run**: Before production deployment, weekly
+- **Includes**:
+  - All smoke, API, and E2E tests
+  - Edge cases
+  - Data filtering and export
+  - Complex user interactions
+
+---
+
+## 🚀 Running Tests
+
+### Run All Tests (Default)
 ```bash
-cd playwright
-npm install
-npx playwright install
+npx playwright test
+# or
+npx playwright test --project=chromium
 ```
 
-### 2. Configure environment (optional)
+### Run Specific Test Categories
 
-Default test target: **Production** (`https://lightoptimization.io.vn`)
-
-To test locally, create `.env` file:
-
-```env
-BASE_URL=http://localhost:5173
-API_URL=http://localhost:8000
-```
-
-## 🧪 Running Tests
-
-### Run all tests
-
+#### Smoke Tests (Fastest)
 ```bash
-npm test
+npx playwright test --project=smoke
 ```
 
-### Run specific test file
-
+#### API Tests Only
 ```bash
-npx playwright test tests/auth.spec.js
+npx playwright test --project=api
 ```
 
-### Run tests in headed mode (see browser)
-
+#### E2E Tests Only
 ```bash
-npm run test:headed
+npx playwright test --project=e2e
 ```
 
-### Run tests in UI mode (interactive)
-
+#### Regression Tests (Full Suite)
 ```bash
-npm run test:ui
+npx playwright test --project=regression
 ```
 
-### Run tests in specific browser
-
+### Run Tests with UI Mode
 ```bash
-npm run test:chrome
-npm run test:firefox
-npm run test:webkit
+npx playwright test --ui
 ```
 
-### Run tests in debug mode
-
-```bash
-npm run test:debug
-```
-
-### View test report
-
-```bash
-npm run test:report
-```
-
-## 📝 Test Cases
-
-### Authentication Tests (TC001-TC010)
-
-| Test ID | Description | Status |
-|---------|-------------|--------|
-| TC001 | Login page displayed correctly | ✅ |
-| TC002 | Login with valid credentials | ✅ |
-| TC003 | Login with invalid email | ✅ |
-| TC004 | Login with empty credentials | ✅ |
-| TC005 | Navigate to forgot password | ✅ |
-| TC006 | Navigate to sign up | ✅ |
-| TC007 | Sign up page displayed | ✅ |
-| TC008 | Logout from dashboard | ✅ |
-| TC009 | Access protected page without login | ✅ |
-| TC010 | Remember session after refresh | ✅ |
-
-### Dashboard Tests (TC011-TC025)
-
-| Test ID | Description | Status |
-|---------|-------------|--------|
-| TC011 | Dashboard displayed correctly | ✅ |
-| TC012 | Charts displayed | ✅ |
-| TC013 | Filter by 1 day | ✅ |
-| TC014 | Filter by 7 days | ✅ |
-| TC015 | Filter by 30 days | ✅ |
-| TC016 | Filter by custom date range | ✅ |
-| TC017 | Clear filters | ✅ |
-| TC018 | Export to CSV | ✅ |
-| TC019-TC022 | Navigation tests | ✅ |
-| TC023-TC025 | UI element tests | ✅ |
-
-### Map Tests (TC026-TC030)
-
-| Test ID | Description | Status |
-|---------|-------------|--------|
-| TC026 | Map displayed correctly | ✅ |
-| TC027 | Map loads within timeout | ✅ |
-| TC028 | Click sensor marker | ✅ |
-| TC029 | Get sensor data | ✅ |
-| TC030 | Map container exists | ✅ |
-
-### API Tests (TC031-TC040)
-
-| Test ID | Description | Status |
-|---------|-------------|--------|
-| TC031 | Health check | ✅ |
-| TC032 | Login API valid | ✅ |
-| TC033 | Login API invalid | ✅ |
-| TC034 | Get sensor data with auth | ✅ |
-| TC035 | Get sensor data without auth | ✅ |
-| TC036 | Send IoT data | ✅ |
-| TC037 | Get sensors list | ✅ |
-| TC038 | Register new user | ✅ |
-| TC039-TC040 | Headers tests | ✅ |
-
-## 📐 Page Object Model
-
-### BasePage
-
-Base class với common methods:
-- `goto(url)` - Navigate to URL
-- `click(selector)` - Click element
-- `fill(selector, value)` - Fill input
-- `getText(selector)` - Get text
-- `isVisible(selector)` - Check visibility
-- `waitForElement(selector)` - Wait for element
-- `getLocalStorageItem(key)` - Get storage
-- `setLocalStorageItem(key, value)` - Set storage
-- `clearLocalStorage()` - Clear storage
-
-### LoginPage
-
-Methods:
-- `navigate()` - Go to login page
-- `login(email, password)` - Perform login
-- `isLoginSuccessful()` - Check if logged in
-- `getErrorMessage()` - Get error text
-- `clickForgotPassword()` - Navigate to forgot password
-- `clickSignUp()` - Navigate to sign up
-
-### DashboardPage
-
-Methods:
-- `navigate()` - Go to dashboard
-- `isDashboardDisplayed()` - Check if displayed
-- `setDateRange(start, end)` - Set date filter
-- `clickQuickFilter(type)` - Apply quick filter
-- `clearFilters()` - Clear all filters
-- `exportToCsv()` - Export data
-- `navigateToPage(name)` - Navigate using sidebar
-
-### MapPage
-
-Methods:
-- `navigate()` - Go to map page
-- `isMapDisplayed()` - Check if map loaded
-- `clickSensorMarker(index)` - Click on marker
-- `isSensorInfoDisplayed()` - Check popup
-- `getSensorData()` - Get sensor info
-
-## 🔧 Configuration
-
-### playwright.config.js
-
-Key configurations:
-- **Browsers**: Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari
-- **Retries**: 2 on CI, 0 locally
-- **Timeout**: 60s per test
-- **Screenshots**: On failure
-- **Videos**: On failure
-- **Traces**: On first retry
-- **Reports**: HTML, JSON, JUnit
-
-### Parallel Execution
-
-Tests run in parallel by default. To disable:
-
-```bash
-npx playwright test --workers=1
-```
-
-## 📊 Reports
-
-After running tests, reports are generated in:
-- `test-results/html-report/` - HTML report
-- `test-results/results.json` - JSON results
-- `test-results/junit.xml` - JUnit XML
-
-View HTML report:
-
-```bash
-npx playwright show-report
-```
-
-## 🐛 Debugging
-
-### Debug single test
-
-```bash
-npx playwright test tests/auth.spec.js --debug
-```
-
-### Codegen (record tests)
-
-```bash
-npm run test:codegen
-```
-
-### Inspector
-
+### Run Tests in Debug Mode
 ```bash
 npx playwright test --debug
 ```
 
-## 📸 Screenshots & Videos
-
-Screenshots and videos are automatically captured on failure:
-- `test-results/*/screenshots/`
-- `test-results/*/videos/`
-
-## 🔐 Test Data
-
-Default test user:
+### Run Tests with Headed Browser
+```bash
+npx playwright test --headed
 ```
-Email: test@example.com
-Password: test123
-```
-
-Make sure this user exists in your database before running tests.
-
-## 🌍 Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `BASE_URL` | Frontend URL | `http://localhost:5173` |
-| `API_URL` | Backend URL | `http://localhost:8000` |
-| `CI` | CI environment | `false` |
-
-## 💡 Tips
-
-1. **Run specific test**:
-   ```bash
-   npx playwright test -g "TC001"
-   ```
-
-2. **Run tests matching pattern**:
-   ```bash
-   npx playwright test tests/auth
-   ```
-
-3. **Update snapshots**:
-   ```bash
-   npx playwright test --update-snapshots
-   ```
-
-4. **List all tests**:
-   ```bash
-   npx playwright test --list
-   ```
-
-5. **Trace viewer**:
-   ```bash
-   npx playwright show-trace test-results/*/trace.zip
-   ```
-
-## 🚀 CI/CD Integration
-
-Tests are integrated in `.github/workflows/test.yml`:
-
-```yaml
-- name: Run Playwright tests
-  run: |
-    cd playwright
-    npm install
-    npx playwright install --with-deps
-    npx playwright test
-```
-
-## 📝 Writing New Tests
-
-1. Create Page Object in `pages/`:
-
-```javascript
-const BasePage = require('./BasePage');
-
-class NewPage extends BasePage {
-  constructor(page) {
-    super(page);
-    this.element = 'selector';
-  }
-  
-  async doSomething() {
-    await this.click(this.element);
-  }
-}
-
-module.exports = NewPage;
-```
-
-2. Create test spec in `tests/`:
-
-```javascript
-const { test, expect } = require('@playwright/test');
-const NewPage = require('../pages/NewPage');
-
-test.describe('New Tests', () => {
-  test('TC041 - Test something', async ({ page }) => {
-    const newPage = new NewPage(page);
-    await newPage.navigate();
-    expect(await newPage.isVisible(newPage.element)).toBeTruthy();
-  });
-});
-```
-
-## 📚 Resources
-
-- [Playwright Docs](https://playwright.dev/)
-- [Page Object Model](https://playwright.dev/docs/pom)
-- [Best Practices](https://playwright.dev/docs/best-practices)
 
 ---
 
-Last updated: November 4, 2025
+## 📊 Test Structure
 
+```
+playwright/
+├── tests/
+│   ├── api.spec.js          # @api, @smoke, @regression
+│   ├── auth.spec.js         # @e2e, @smoke, @regression
+│   └── dashboard.spec.js    # @e2e, @regression
+├── pages/
+│   ├── BasePage.js
+│   ├── LoginPage.js
+│   ├── DashboardPage.js
+│   └── SignUpPage.js
+├── utils/
+│   └── apiHelpers.js
+├── playwright.config.js
+└── README.md
+```
+
+---
+
+## 🏷️ Test Tags Reference
+
+| Tag | Tests Included | Execution Time | Use Case |
+|-----|---------------|----------------|----------|
+| `@smoke` | API + Auth (critical) | ~1-2 min | Quick validation |
+| `@api` | All API tests | ~30 sec | Backend changes |
+| `@e2e` | Auth + Dashboard | ~3-5 min | User flows |
+| `@regression` | All tests | ~5-10 min | Full validation |
+
+---
+
+## 🔧 Configuration
+
+### Environment Variables
+
+```bash
+# Backend API URL
+API_URL=https://api.lightoptimization.io.vn
+
+# Frontend Base URL
+BASE_URL=https://lightoptimization.io.vn
+```
+
+### Timeouts
+
+- **Local**: 30s per test
+- **CI/CD**: 60s per test (slower environment)
+- **Action Timeout**: 10s (local), 15s (CI)
+- **Navigation Timeout**: 15s (local), 30s (CI)
+
+### Execution Mode
+
+- **Workers**: 1 (sequential execution)
+- **Retries**: 0 (local), 2 (CI)
+- **Screenshot**: On failure
+- **Video**: On failure
+
+---
+
+## 📈 CI/CD Integration
+
+### GitHub Actions Workflow
+
+Tests run automatically in CI/CD:
+
+1. **On Pull Request**: Smoke tests
+2. **On Merge to Main**: Regression tests
+3. **Scheduled (Nightly)**: Full regression suite
+
+### Run Specific Test Suite in CI
+
+Modify `.github/workflows/test.yml`:
+
+```yaml
+- name: Run Playwright Tests
+  run: npx playwright test --project=smoke  # Change project here
+```
+
+---
+
+## 🎯 Test Coverage
+
+### Current Test Count
+
+- **API Tests**: 10 tests
+- **Auth Tests**: 10 tests
+- **Dashboard Tests**: 15 tests
+- **Total**: 35 tests (33 active, 2 skipped)
+
+### Coverage by Category
+
+| Category | Tests | Status |
+|----------|-------|--------|
+| Smoke | 20 tests | ✅ 100% passing |
+| API | 10 tests | ✅ 100% passing |
+| E2E | 25 tests | ✅ 100% passing |
+| Regression | 33 tests | ✅ 100% passing |
+
+---
+
+## 🐛 Debugging Failed Tests
+
+### View Test Report
+```bash
+npx playwright show-report
+```
+
+### View Trace (Interactive Timeline)
+```bash
+npx playwright show-trace test-results/[test-name]/trace.zip
+```
+
+### Screenshots and Videos
+Failed tests automatically save:
+- Screenshots: `test-results/*/test-failed-*.png`
+- Videos: `test-results/*/video.webm`
+
+---
+
+## 📝 Writing New Tests
+
+### Add Tags to Test Suite
+
+```javascript
+test.describe('My Feature Tests', { 
+  tag: ['@e2e', '@regression']  // Add appropriate tags
+}, () => {
+  // Your tests here
+});
+```
+
+### Tag Guidelines
+
+- **Every test** should have at least one tag
+- **Critical tests** should include `@smoke`
+- **API tests** should include `@api`
+- **UI tests** should include `@e2e`
+- **All tests** should include `@regression`
+
+---
+
+## 🔗 Useful Commands
+
+```bash
+# List all projects
+npx playwright test --list
+
+# Run specific test file
+npx playwright test tests/api.spec.js
+
+# Run tests matching pattern
+npx playwright test --grep "@smoke"
+
+# Run tests with specific browser
+npx playwright test --project=chromium
+
+# Update snapshots
+npx playwright test --update-snapshots
+
+# Install browsers
+npx playwright install
+```
+
+---
+
+## 📚 Additional Resources
+
+- [Playwright Documentation](https://playwright.dev)
+- [Test Organization Best Practices](https://playwright.dev/docs/test-annotations)
+- [CI/CD Setup Guide](../documents/CI-CD/)
+
+---
+
+**Last Updated**: 2025-01-06  
+**Maintained by**: QA Team

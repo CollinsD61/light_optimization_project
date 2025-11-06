@@ -3,7 +3,9 @@ const LoginPage = require('../pages/LoginPage');
 const SignUpPage = require('../pages/SignUpPage');
 const DashboardPage = require('../pages/DashboardPage');
 
-test.describe('Authentication Tests', () => {
+test.describe('Authentication Tests', { 
+  tag: ['@e2e', '@smoke', '@regression'] 
+}, () => {
   let loginPage;
   let signUpPage;
   let dashboardPage;

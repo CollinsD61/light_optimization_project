@@ -4,7 +4,9 @@ const { getDefaultHeaders, getAuthHeaders } = require('../utils/apiHelpers');
 // Backend API is accessible via subdomain api.lightoptimization.io.vn
 const BASE_URL = process.env.API_URL || 'https://api.lightoptimization.io.vn';
 
-test.describe('API Tests', () => {
+test.describe('API Tests', { 
+  tag: ['@api', '@smoke', '@regression'] 
+}, () => {
   let accessToken;
 
   test.beforeAll(async ({ request }) => {

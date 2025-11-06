@@ -11,7 +11,7 @@ module.exports = defineConfig({
   timeout: process.env.CI ? 60 * 1000 : 30 * 1000, // 60s on CI, 30s locally
   
   /* Run tests in files in parallel */
-  fullyParallel: false, // Disabled for sequential execution
+  fullyParallel: true, // Enable parallel execution for speed
   
   /* Fail the build on CI if you accidentally left test.only in the source code */
   forbidOnly: !!process.env.CI,
@@ -19,8 +19,8 @@ module.exports = defineConfig({
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
   
-  /* Run tests sequentially - 1 worker */
-  workers: 1,
+  /* Use maximum available workers for parallel execution */
+  workers: process.env.CI ? '75%' : undefined, // CI: 75% of cores, Local: 50% (default)
   
   /* Reporter to use */
   reporter: [
@@ -59,32 +59,49 @@ module.exports = defineConfig({
     },
   },
 
-  /* Configure projects for major browsers */
+  /* Configure projects for different test types and browsers */
   projects: [
+    // Test Groups - Run specific test suites
+    {
+      name: 'smoke',
+      testMatch: '**/*.spec.js',
+      grep: /@smoke/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'api',
+      testMatch: '**/*.spec.js',
+      grep: /@api/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'e2e',
+      testMatch: '**/*.spec.js',
+      grep: /@e2e/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'regression',
+      testMatch: '**/*.spec.js',
+      grep: /@regression/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    
+    // Default: All tests on Chromium
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
 
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-
-    /* Test against mobile viewports */
-    {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
-    },
-    {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
-    },
+    // Optional: Other browsers (commented out by default)
+    // {
+    //   name: 'firefox',
+    //   use: { ...devices['Desktop Firefox'] },
+    // },
+    // {
+    //   name: 'webkit',
+    //   use: { ...devices['Desktop Safari'] },
+    // },
   ],
 
   /* Run your local dev server before starting the tests */

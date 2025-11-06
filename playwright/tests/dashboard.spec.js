@@ -2,7 +2,9 @@ const { test, expect } = require('@playwright/test');
 const LoginPage = require('../pages/LoginPage');
 const DashboardPage = require('../pages/DashboardPage');
 
-test.describe('Dashboard Tests', () => {
+test.describe('Dashboard Tests', { 
+  tag: ['@e2e', '@regression'] 
+}, () => {
   let loginPage;
   let dashboardPage;
 

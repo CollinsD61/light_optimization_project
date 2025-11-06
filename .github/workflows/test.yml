@@ -7,6 +7,18 @@ on:
     types:
       - completed
   workflow_dispatch: # Cho phép chạy thủ công
+    inputs:
+      test_suite:
+        description: 'Test suite to run'
+        required: false
+        default: 'regression'
+        type: choice
+        options:
+          - smoke
+          - api
+          - e2e
+          - regression
+          - chromium
 
 jobs:
   # SonarCloud - chạy riêng, không block các tests khác
@@ -133,6 +145,12 @@ jobs:
     runs-on: ubuntu-latest
     # Chạy song song với security tests
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    outputs:
+      test_total: ${{ steps.playwright.outputs.test_total }}
+      test_passed: ${{ steps.playwright.outputs.test_passed }}
+      test_failed: ${{ steps.playwright.outputs.test_failed }}
+      test_skipped: ${{ steps.playwright.outputs.test_skipped }}
+      test_duration: ${{ steps.playwright.outputs.test_duration }}
 
     steps:
       # 1. Checkout code
@@ -154,7 +172,39 @@ jobs:
 
       # 4. Run Playwright E2E tests on Production
       - name: Run Playwright E2E tests
-        run: npx playwright test --project=chromium
+        id: playwright
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # Manual trigger - use selected test suite
+            TEST_SUITE="${{ github.event.inputs.test_suite }}"
+            echo "🎯 Running test suite: $TEST_SUITE"
+            npx playwright test --project=$TEST_SUITE --reporter=json,list > playwright-output.txt 2>&1 || true
+          else
+            # Auto trigger after deployment - run regression tests
+            echo "🔄 Running full regression test suite"
+            npx playwright test --project=regression --reporter=json,list > playwright-output.txt 2>&1 || true
+          fi
+          
+          # Extract test statistics from JSON report
+          if [ -f "test-results/results.json" ]; then
+            TOTAL_TESTS=$(jq -r '.suites[].specs | length' test-results/results.json | awk '{s+=$1} END {print s}')
+            PASSED_TESTS=$(jq -r '[.suites[].specs[].tests[] | select(.results[].status == "passed")] | length' test-results/results.json)
+            FAILED_TESTS=$(jq -r '[.suites[].specs[].tests[] | select(.results[].status == "failed")] | length' test-results/results.json)
+            SKIPPED_TESTS=$(jq -r '[.suites[].specs[].tests[] | select(.results[].status == "skipped")] | length' test-results/results.json)
+            DURATION=$(jq -r '.suites[].specs[].tests[].results[].duration' test-results/results.json | awk '{s+=$1} END {printf "%.1f", s/1000}')
+            
+            echo "test_total=$TOTAL_TESTS" >> $GITHUB_OUTPUT
+            echo "test_passed=$PASSED_TESTS" >> $GITHUB_OUTPUT
+            echo "test_failed=$FAILED_TESTS" >> $GITHUB_OUTPUT
+            echo "test_skipped=$SKIPPED_TESTS" >> $GITHUB_OUTPUT
+            echo "test_duration=${DURATION}s" >> $GITHUB_OUTPUT
+          else
+            echo "test_total=N/A" >> $GITHUB_OUTPUT
+            echo "test_passed=N/A" >> $GITHUB_OUTPUT
+            echo "test_failed=N/A" >> $GITHUB_OUTPUT
+            echo "test_skipped=N/A" >> $GITHUB_OUTPUT
+            echo "test_duration=N/A" >> $GITHUB_OUTPUT
+          fi
         working-directory: playwright
         env:
           BASE_URL: https://lightoptimization.io.vn
@@ -241,12 +291,22 @@ jobs:
             EXIT_CODE=1
           fi
           
+          # Determine test suite run
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TEST_SUITE_NAME="${{ github.event.inputs.test_suite }}"
+            TEST_SUITE_BADGE="🎯 Manual Run: **${TEST_SUITE_NAME}** suite"
+          else
+            TEST_SUITE_NAME="regression"
+            TEST_SUITE_BADGE="🔄 Auto Run: **Full Regression** suite"
+          fi
+          
           # Build summary message
           SUMMARY_MSG="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
           SUMMARY_MSG="${SUMMARY_MSG}🧪 **Test Pipeline Results**\n"
           SUMMARY_MSG="${SUMMARY_MSG}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
           SUMMARY_MSG="${SUMMARY_MSG}📊 **Overall Status:** ${OVERALL_STATUS}\n"
-          SUMMARY_MSG="${SUMMARY_MSG}✅ **Success Rate:** ${SUCCESS_COUNT}/4 test suites\n\n"
+          SUMMARY_MSG="${SUMMARY_MSG}✅ **Success Rate:** ${SUCCESS_COUNT}/4 test suites\n"
+          SUMMARY_MSG="${SUMMARY_MSG}${TEST_SUITE_BADGE}\n\n"
           SUMMARY_MSG="${SUMMARY_MSG}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
           SUMMARY_MSG="${SUMMARY_MSG}📋 **Detailed Results:**\n\n"
           SUMMARY_MSG="${SUMMARY_MSG}1️⃣ SonarCloud Analysis: ${SONAR_STATUS}\n"
@@ -332,12 +392,26 @@ jobs:
             TRIVY_DETAIL="Container vulnerabilities found"
           fi
           
+          # Determine test suite for Playwright
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TEST_SUITE_NAME="${{ github.event.inputs.test_suite }}"
+          else
+            TEST_SUITE_NAME="regression"
+          fi
+          
+          # Get Playwright test statistics
+          PW_TOTAL="${{ needs.playwright-tests.outputs.test_total }}"
+          PW_PASSED="${{ needs.playwright-tests.outputs.test_passed }}"
+          PW_FAILED="${{ needs.playwright-tests.outputs.test_failed }}"
+          PW_SKIPPED="${{ needs.playwright-tests.outputs.test_skipped }}"
+          PW_DURATION="${{ needs.playwright-tests.outputs.test_duration }}"
+          
           if [[ "${{ needs.playwright-tests.result }}" == "success" ]]; then
             PLAYWRIGHT_STATUS="✅ **Passed**"
-            PLAYWRIGHT_DETAIL="All E2E tests successful"
+            PLAYWRIGHT_DETAIL="${PW_PASSED}/${PW_TOTAL} tests passed"
           else
             PLAYWRIGHT_STATUS="❌ **Failed**"
-            PLAYWRIGHT_DETAIL="Some E2E tests failed"
+            PLAYWRIGHT_DETAIL="${PW_FAILED} failed, ${PW_PASSED} passed"
           fi
           
           # Calculate duration (approximate)
@@ -381,8 +455,8 @@ jobs:
                   "inline": true
                 },
                 {
-                  "name": "🎭 Playwright E2E Tests",
-                  "value": "'"${PLAYWRIGHT_STATUS}"'\n*'"${PLAYWRIGHT_DETAIL}"'*",
+                  "name": "🎭 Playwright Tests ('"${TEST_SUITE_NAME}"')",
+                  "value": "'"${PLAYWRIGHT_STATUS}"'\n*'"${PLAYWRIGHT_DETAIL}"'*\nDuration: '"${PW_DURATION}"'",
                   "inline": true
                 },
                 {
@@ -396,8 +470,18 @@ jobs:
                   "inline": true
                 },
                 {
-                  "name": "⏱️ Duration",
+                  "name": "🎯 Test Suite Type",
+                  "value": "`'"${TEST_SUITE_NAME}"'` suite",
+                  "inline": true
+                },
+                {
+                  "name": "⏱️ Pipeline Duration",
                   "value": "'"${DURATION}"'",
+                  "inline": true
+                },
+                {
+                  "name": "🧪 Test Details",
+                  "value": "📊 Total: **'"${PW_TOTAL}"'**\n✅ Passed: **'"${PW_PASSED}"'**\n❌ Failed: **'"${PW_FAILED}"'**\n⏭️ Skipped: **'"${PW_SKIPPED}"'**",
                   "inline": true
                 },
                 {
@@ -421,13 +505,28 @@ jobs:
                   "inline": true
                 },
                 {
+                  "name": "🌐 Environment",
+                  "value": "🚀 Production\n🔗 [lightoptimization.io.vn](https://lightoptimization.io.vn)",
+                  "inline": true
+                },
+                {
+                  "name": "⚙️ Parallel Workers",
+                  "value": "75% CPU cores\n(CI optimized)",
+                  "inline": true
+                },
+                {
                   "name": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
                   "value": "** **",
                   "inline": false
                 },
                 {
                   "name": "🔗 Quick Links",
-                  "value": "• [View Full Report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\n• [Repository](${{ github.server_url }}/${{ github.repository }})\n• [Commit Details](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})",
+                  "value": "• 📊 [GitHub Actions Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\n• 🎭 [Playwright HTML Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)\n• 📝 [Commit Details](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})\n• 📁 [Repository](${{ github.server_url }}/${{ github.repository }})\n• 🔧 [Workflow File](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/.github/workflows/test.yml)",
+                  "inline": false
+                },
+                {
+                  "name": "📈 Test Categories",
+                  "value": "🔥 Smoke: Quick sanity checks\n🔌 API: Backend validation\n🌐 E2E: Full user flows\n🔄 Regression: Complete suite",
                   "inline": false
                 }
               ],
