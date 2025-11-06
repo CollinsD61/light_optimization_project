@@ -74,7 +74,7 @@ jobs:
             if [ -f .deploy-markers/fe-last-deploy ]; then
               FE_NEWER=\$(find FE -type f -newer .deploy-markers/fe-last-deploy 2>/dev/null | wc -l)
               if [ \"\$FE_NEWER\" -gt 0 ]; then
-                echo '🔄 Frontend: Changes detected (\$FE_NEWER files modified), will rebuild'
+                echo \"🔄 Frontend: Changes detected (\$FE_NEWER files modified), will rebuild\"
                 FE_CHANGED=true
               else
                 echo '✅ Frontend: No changes detected, will use cache'
@@ -88,7 +88,7 @@ jobs:
             if [ -f .deploy-markers/be-last-deploy ]; then
               BE_NEWER=\$(find BE_nodejs -type f -newer .deploy-markers/be-last-deploy 2>/dev/null | wc -l)
               if [ \"\$BE_NEWER\" -gt 0 ]; then
-                echo '🔄 Backend: Changes detected (\$BE_NEWER files modified), will rebuild'
+                echo \"🔄 Backend: Changes detected (\$BE_NEWER files modified), will rebuild\"
                 BE_CHANGED=true
               else
                 echo '✅ Backend: No changes detected, will use cache'
