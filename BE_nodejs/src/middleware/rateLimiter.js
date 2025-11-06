@@ -1,9 +1,16 @@
 const rateLimit = require('express-rate-limit');
 
+// Skip rate limiting for Playwright tests
+const skipPlaywright = (req) => {
+  const userAgent = req.get('User-Agent') || '';
+  return userAgent.includes('Playwright');
+};
+
 // General API rate limiter
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per windowMs
+  skip: skipPlaywright, // Skip for Playwright tests
   message: {
     error: 'Too many requests from this IP, please try again later.',
     retryAfter: '15 minutes'
@@ -17,6 +24,7 @@ const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // Limit each IP to 5 login attempts per windowMs
   skipSuccessfulRequests: true, // Don't count successful requests
+  skip: skipPlaywright, // Skip for Playwright tests
   message: {
     error: 'Too many login attempts, please try again after 15 minutes.',
     retryAfter: '15 minutes'
@@ -29,6 +37,7 @@ const authLimiter = rateLimit({
 const iotLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   max: 60, // Limit each IP to 60 requests per minute (1 per second average)
+  skip: skipPlaywright, // Skip for Playwright tests
   message: {
     error: 'Too many data submissions, please slow down.',
     retryAfter: '1 minute'
@@ -41,6 +50,7 @@ const iotLimiter = rateLimit({
 const passwordResetLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 3, // Limit each IP to 3 password reset attempts per hour
+  skip: skipPlaywright, // Skip for Playwright tests
   message: {
     error: 'Too many password reset attempts, please try again after 1 hour.',
     retryAfter: '1 hour'
@@ -53,6 +63,7 @@ const passwordResetLimiter = rateLimit({
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 5, // Limit each IP to 5 registrations per hour
+  skip: skipPlaywright, // Skip for Playwright tests
   message: {
     error: 'Too many registration attempts, please try again after 1 hour.',
     retryAfter: '1 hour'
