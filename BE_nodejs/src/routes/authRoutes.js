@@ -7,21 +7,26 @@ const {
   forgotPasswordValidation,
   resetPasswordValidation
 } = require('../middleware/validators');
+const {
+  authLimiter,
+  registerLimiter,
+  passwordResetLimiter
+} = require('../middleware/rateLimiter');
 
 // POST /api/users/register
-router.post('/register', registerValidation, authController.register);
+router.post('/register', registerLimiter, registerValidation, authController.register);
 
 // POST /api/users/login
-router.post('/login', loginValidation, authController.login);
+router.post('/login', authLimiter, loginValidation, authController.login);
 
 // POST /api/users/google-login
-router.post('/google-login', authController.googleLogin);
+router.post('/google-login', authLimiter, authController.googleLogin);
 
 // POST /api/users/forgot-password
-router.post('/forgot-password', forgotPasswordValidation, authController.forgotPassword);
+router.post('/forgot-password', passwordResetLimiter, forgotPasswordValidation, authController.forgotPassword);
 
 // POST /api/users/reset-password
-router.post('/reset-password', resetPasswordValidation, authController.resetPassword);
+router.post('/reset-password', passwordResetLimiter, resetPasswordValidation, authController.resetPassword);
 
 module.exports = router;
 

@@ -1,0 +1,68 @@
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: sensors
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: dohoang
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Node.js Backend - LOCAL DEVELOPMENT
+  backend:
+    build:
+      context: ./BE_nodejs
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      - NODE_ENV=development
+      - PORT=8000
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=sensors
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=dohoang
+      - JWT_SECRET=local_development_secret_key
+      - JWT_EXPIRES_IN=30m
+      - JWT_REFRESH_EXPIRES_IN=1d
+      - GOOGLE_CLIENT_ID=1035731953101-ubmukhc15mg1o4uu0vaq6aib5jnjqbte.apps.googleusercontent.com
+      - FRONTEND_URL=http://localhost:5173
+      - CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+    networks:
+      - backend
+    restart: unless-stopped
+
+  # Frontend - LOCAL DEVELOPMENT
+  frontend:
+    build:
+      context: ./FE
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    command: npm run dev -- --host 0.0.0.0
+    networks:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  backend:
+    driver: bridge
+

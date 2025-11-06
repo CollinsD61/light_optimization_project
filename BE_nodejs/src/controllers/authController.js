@@ -100,10 +100,12 @@ const googleLogin = async (req, res, next) => {
 
     if (!user) {
       // Create new user for Google OAuth
+      // Use a random password that cannot be guessed (OAuth users don't use password login)
+      const randomPassword = crypto.randomBytes(32).toString('hex');
       user = await db.User.create({
         email,
         // name, // Field doesn't exist in current schema
-        password: null // No password for OAuth users
+        password: randomPassword // Random password for OAuth users (they won't use it)
       });
     }
 

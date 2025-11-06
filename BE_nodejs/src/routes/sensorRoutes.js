@@ -3,6 +3,7 @@ const router = express.Router();
 const sensorController = require('../controllers/sensorController');
 const sensorDataController = require('../controllers/sensorDataController');
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
+const { iotLimiter } = require('../middleware/rateLimiter');
 
 // Sensor routes
 router.get('/sensors', authenticateToken, sensorController.getSensors);
@@ -20,8 +21,8 @@ router.put('/sensor-data/:id', authenticateToken, sensorDataController.updateSen
 router.patch('/sensor-data/:id', authenticateToken, sensorDataController.updateSensorData);
 router.delete('/sensor-data/:id', authenticateToken, sensorDataController.deleteSensorData);
 
-// Public endpoint for IoT devices to send data
-router.post('/receive-data', sensorDataController.receiveSensorData);
+// Public endpoint for IoT devices to send data (with rate limiting)
+router.post('/receive-data', iotLimiter, sensorDataController.receiveSensorData);
 
 module.exports = router;
 

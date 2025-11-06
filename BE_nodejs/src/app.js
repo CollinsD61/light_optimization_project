@@ -3,6 +3,7 @@ const cors = require('cors');
 const config = require('./config/config');
 const routes = require('./routes');
 const errorHandler = require('./middleware/errorHandler');
+const { apiLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
 
@@ -33,6 +34,9 @@ app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
 });
+
+// Apply rate limiting to all API routes
+app.use('/api', apiLimiter);
 
 // Root route
 app.get('/', (req, res) => {
