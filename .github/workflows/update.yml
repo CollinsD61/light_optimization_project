@@ -28,10 +28,13 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /root/web_project"
 
-      # Rsync code lên VPS (bỏ qua venv)
-      - name: Copy codebase to VPS via rsync (ignore venv)
+      # Rsync code lên VPS (bỏ qua venv và deploy markers)
+      - name: Copy codebase to VPS via rsync (ignore venv and markers)
         run: |
-          rsync -avz --delete --exclude 'venv' \
+          rsync -avz --delete \
+            --exclude 'venv' \
+            --exclude '.deploy-markers' \
+            --exclude 'node_modules' \
             -e "ssh -o StrictHostKeyChecking=no" \
             ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/root/web_project/
 
