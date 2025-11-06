@@ -186,40 +186,204 @@ jobs:
     if: always()
 
     steps:
-      - name: Test Summary
+      - name: Generate Test Summary
+        id: summary
         run: |
-          echo "## 🧪 Test Results Summary"
-          echo ""
-          echo "### SonarCloud Analysis"
-          echo "Status: ${{ needs.sonarcloud.result }}"
-          echo ""
-          echo "### Snyk Security Scans"
-          echo "Status: ${{ needs.snyk-security.result }}"
-          echo ""
-          echo "### Trivy Security Scans"
-          echo "Status: ${{ needs.trivy-security.result }}"
-          echo ""
-          echo "### Playwright E2E Tests"
-          echo "Status: ${{ needs.playwright-tests.result }}"
-          echo ""
-          
           # Count successes (treat skipped as success since sonarcloud uses continue-on-error)
           SUCCESS_COUNT=0
-          [[ "${{ needs.sonarcloud.result }}" == "success" || "${{ needs.sonarcloud.result }}" == "skipped" ]] && ((SUCCESS_COUNT++)) || true
-          [[ "${{ needs.snyk-security.result }}" == "success" ]] && ((SUCCESS_COUNT++)) || true
-          [[ "${{ needs.trivy-security.result }}" == "success" ]] && ((SUCCESS_COUNT++)) || true
-          [[ "${{ needs.playwright-tests.result }}" == "success" ]] && ((SUCCESS_COUNT++)) || true
+          FAILED_TESTS=""
           
-          echo "✅ $SUCCESS_COUNT/4 test suites passed"
-          
-          if [[ $SUCCESS_COUNT -eq 4 ]]; then
-            echo "🎉 All tests passed!"
-            exit 0
-          elif [[ $SUCCESS_COUNT -ge 2 ]]; then
-            echo "⚠️ Some tests failed - review logs above"
-            exit 0
+          # Check each test result
+          if [[ "${{ needs.sonarcloud.result }}" == "success" || "${{ needs.sonarcloud.result }}" == "skipped" ]]; then
+            ((SUCCESS_COUNT++)) || true
+            SONAR_STATUS="✅ PASSED"
           else
-            echo "❌ Multiple test failures - immediate attention needed"
-            exit 1
+            SONAR_STATUS="❌ FAILED"
+            FAILED_TESTS="${FAILED_TESTS}• SonarCloud Analysis\n"
           fi
+          
+          if [[ "${{ needs.snyk-security.result }}" == "success" ]]; then
+            ((SUCCESS_COUNT++)) || true
+            SNYK_STATUS="✅ PASSED"
+          else
+            SNYK_STATUS="❌ FAILED"
+            FAILED_TESTS="${FAILED_TESTS}• Snyk Security Scans\n"
+          fi
+          
+          if [[ "${{ needs.trivy-security.result }}" == "success" ]]; then
+            ((SUCCESS_COUNT++)) || true
+            TRIVY_STATUS="✅ PASSED"
+          else
+            TRIVY_STATUS="❌ FAILED"
+            FAILED_TESTS="${FAILED_TESTS}• Trivy Security Scans\n"
+          fi
+          
+          if [[ "${{ needs.playwright-tests.result }}" == "success" ]]; then
+            ((SUCCESS_COUNT++)) || true
+            PLAYWRIGHT_STATUS="✅ PASSED"
+          else
+            PLAYWRIGHT_STATUS="❌ FAILED"
+            FAILED_TESTS="${FAILED_TESTS}• Playwright E2E Tests\n"
+          fi
+          
+          # Determine overall status
+          if [[ $SUCCESS_COUNT -eq 4 ]]; then
+            OVERALL_STATUS="🎉 ALL TESTS PASSED"
+            STATUS_EMOJI="🎉"
+            EXIT_CODE=0
+          elif [[ $SUCCESS_COUNT -ge 2 ]]; then
+            OVERALL_STATUS="⚠️ SOME TESTS FAILED"
+            STATUS_EMOJI="⚠️"
+            EXIT_CODE=0
+          else
+            OVERALL_STATUS="❌ MULTIPLE FAILURES"
+            STATUS_EMOJI="❌"
+            EXIT_CODE=1
+          fi
+          
+          # Build summary message
+          SUMMARY_MSG="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+          SUMMARY_MSG="${SUMMARY_MSG}🧪 **Test Pipeline Results**\n"
+          SUMMARY_MSG="${SUMMARY_MSG}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+          SUMMARY_MSG="${SUMMARY_MSG}📊 **Overall Status:** ${OVERALL_STATUS}\n"
+          SUMMARY_MSG="${SUMMARY_MSG}✅ **Success Rate:** ${SUCCESS_COUNT}/4 test suites\n\n"
+          SUMMARY_MSG="${SUMMARY_MSG}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+          SUMMARY_MSG="${SUMMARY_MSG}📋 **Detailed Results:**\n\n"
+          SUMMARY_MSG="${SUMMARY_MSG}1️⃣ SonarCloud Analysis: ${SONAR_STATUS}\n"
+          SUMMARY_MSG="${SUMMARY_MSG}2️⃣ Snyk Security: ${SNYK_STATUS}\n"
+          SUMMARY_MSG="${SUMMARY_MSG}3️⃣ Trivy Security: ${TRIVY_STATUS}\n"
+          SUMMARY_MSG="${SUMMARY_MSG}4️⃣ Playwright E2E: ${PLAYWRIGHT_STATUS}\n"
+          
+          if [[ -n "$FAILED_TESTS" ]]; then
+            SUMMARY_MSG="${SUMMARY_MSG}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            SUMMARY_MSG="${SUMMARY_MSG}❌ **Failed Tests:**\n${FAILED_TESTS}"
+          fi
+          
+          SUMMARY_MSG="${SUMMARY_MSG}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+          SUMMARY_MSG="${SUMMARY_MSG}🔗 **Run Details:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n"
+          SUMMARY_MSG="${SUMMARY_MSG}🕐 **Time:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')\n"
+          SUMMARY_MSG="${SUMMARY_MSG}🌿 **Branch:** ${{ github.ref_name }}\n"
+          SUMMARY_MSG="${SUMMARY_MSG}👤 **Triggered by:** ${{ github.actor }}\n"
+          
+          # Output to console
+          echo -e "$SUMMARY_MSG"
+          
+          # Save for Messenger notification
+          echo "summary_message<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$SUMMARY_MSG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          echo "success_count=$SUCCESS_COUNT" >> $GITHUB_OUTPUT
+          echo "overall_status=$OVERALL_STATUS" >> $GITHUB_OUTPUT
+          echo "status_emoji=$STATUS_EMOJI" >> $GITHUB_OUTPUT
+          echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
+
+      - name: Send Discord Notification
+        if: always()
+        continue-on-error: true
+        run: |
+          # Check if Discord webhook is configured
+          if [[ -z "${{ secrets.DISCORD_WEBHOOK_URL }}" ]]; then
+            echo "⚠️ Discord webhook not configured. Skipping notification."
+            echo "To enable: Add DISCORD_WEBHOOK_URL to GitHub Secrets"
+            echo "Guide: documents/CI-CD/QUICK_START_DISCORD.md"
+            exit 0
+          fi
+          
+          echo "📤 Sending notification to Discord..."
+          
+          # Determine embed color based on success rate
+          if [[ "${{ steps.summary.outputs.success_count }}" == "4" ]]; then
+            COLOR="5763719"  # Green (#57F287) - All passed
+          elif [[ "${{ steps.summary.outputs.success_count }}" -ge "2" ]]; then
+            COLOR="16776960"  # Yellow (#FFFF00) - Some failed
+          else
+            COLOR="15548997"  # Red (#ED4245) - Multiple failures
+          fi
+          
+          # Get individual test results with proper status
+          SONAR_STATUS="$( [[ "${{ needs.sonarcloud.result }}" == "success" || "${{ needs.sonarcloud.result }}" == "skipped" ]] && echo "✅ PASSED" || echo "❌ FAILED" )"
+          SNYK_STATUS="$( [[ "${{ needs.snyk-security.result }}" == "success" ]] && echo "✅ PASSED" || echo "❌ FAILED" )"
+          TRIVY_STATUS="$( [[ "${{ needs.trivy-security.result }}" == "success" ]] && echo "✅ PASSED" || echo "❌ FAILED" )"
+          PLAYWRIGHT_STATUS="$( [[ "${{ needs.playwright-tests.result }}" == "success" ]] && echo "✅ PASSED" || echo "❌ FAILED" )"
+          
+          # Build Discord embed fields
+          FIELDS='[
+            {
+              "name": "1️⃣ SonarCloud Analysis",
+              "value": "'"${SONAR_STATUS}"'",
+              "inline": true
+            },
+            {
+              "name": "2️⃣ Snyk Security",
+              "value": "'"${SNYK_STATUS}"'",
+              "inline": true
+            },
+            {
+              "name": "3️⃣ Trivy Security",
+              "value": "'"${TRIVY_STATUS}"'",
+              "inline": true
+            },
+            {
+              "name": "4️⃣ Playwright E2E",
+              "value": "'"${PLAYWRIGHT_STATUS}"'",
+              "inline": true
+            },
+            {
+              "name": "📊 Success Rate",
+              "value": "**'"${{ steps.summary.outputs.success_count }}/4"'** test suites passed",
+              "inline": false
+            },
+            {
+              "name": "🌿 Branch",
+              "value": "`'"${{ github.ref_name }}"'`",
+              "inline": true
+            },
+            {
+              "name": "👤 Triggered by",
+              "value": "'"${{ github.actor }}"'",
+              "inline": true
+            },
+            {
+              "name": "🔗 Details",
+              "value": "[View Full Report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})",
+              "inline": false
+            }
+          ]'
+          
+          # Send to Discord with rich embed
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Content-Type: application/json" \
+            -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+            -d '{
+              "username": "GitHub CI/CD Bot",
+              "avatar_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+              "embeds": [{
+                "title": "'"${{ steps.summary.outputs.status_emoji }} Test Pipeline Completed"'",
+                "description": "**'"${{ steps.summary.outputs.overall_status }}"'**\n\nAutomated test results from GitHub Actions pipeline.",
+                "color": '"$COLOR"',
+                "fields": '"$FIELDS"',
+                "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'",
+                "footer": {
+                  "text": "GitHub Actions • web_project",
+                  "icon_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+                },
+                "author": {
+                  "name": "'"${{ github.repository }}"'",
+                  "url": "${{ github.server_url }}/${{ github.repository }}",
+                  "icon_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+                }
+              }]
+            }')
+          
+          # Check if notification was sent successfully
+          if [[ "$HTTP_CODE" -eq 204 || "$HTTP_CODE" -eq 200 ]]; then
+            echo "✅ Discord notification sent successfully! (HTTP $HTTP_CODE)"
+          else
+            echo "⚠️ Failed to send Discord notification (HTTP $HTTP_CODE)"
+            echo "Check your DISCORD_WEBHOOK_URL in GitHub Secrets"
+          fi
+
+      - name: Exit with appropriate code
+        run: exit ${{ steps.summary.outputs.exit_code }}
 

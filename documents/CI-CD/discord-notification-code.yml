@@ -1,0 +1,110 @@
+# ============================================================
+# Discord Notification Step - Copy & Paste này vào test.yml
+# Thay thế từ dòng 281-303 (phần Send Messenger Notification)
+# ============================================================
+
+      - name: Send Discord Notification
+        if: always()
+        continue-on-error: true
+        run: |
+          # Check if Discord webhook is configured
+          if [[ -z "${{ secrets.DISCORD_WEBHOOK_URL }}" ]]; then
+            echo "⚠️ Discord webhook not configured. Skipping notification."
+            echo "To enable: Add DISCORD_WEBHOOK_URL to GitHub Secrets"
+            exit 0
+          fi
+          
+          echo "📤 Sending notification to Discord..."
+          
+          # Determine embed color based on success rate
+          if [[ "${{ steps.summary.outputs.success_count }}" == "4" ]]; then
+            COLOR="5763719"  # Green (#57F287) - All passed
+          elif [[ "${{ steps.summary.outputs.success_count }}" -ge "2" ]]; then
+            COLOR="16776960"  # Yellow (#FFFF00) - Some failed
+          else
+            COLOR="15548997"  # Red (#ED4245) - Multiple failures
+          fi
+          
+          # Get individual test results with proper status
+          SONAR_STATUS="$( [[ "${{ needs.sonarcloud.result }}" == "success" || "${{ needs.sonarcloud.result }}" == "skipped" ]] && echo "✅ PASSED" || echo "❌ FAILED" )"
+          SNYK_STATUS="$( [[ "${{ needs.snyk-security.result }}" == "success" ]] && echo "✅ PASSED" || echo "❌ FAILED" )"
+          TRIVY_STATUS="$( [[ "${{ needs.trivy-security.result }}" == "success" ]] && echo "✅ PASSED" || echo "❌ FAILED" )"
+          PLAYWRIGHT_STATUS="$( [[ "${{ needs.playwright-tests.result }}" == "success" ]] && echo "✅ PASSED" || echo "❌ FAILED" )"
+          
+          # Build Discord embed fields
+          FIELDS='[
+            {
+              "name": "1️⃣ SonarCloud Analysis",
+              "value": "'"${SONAR_STATUS}"'",
+              "inline": true
+            },
+            {
+              "name": "2️⃣ Snyk Security",
+              "value": "'"${SNYK_STATUS}"'",
+              "inline": true
+            },
+            {
+              "name": "3️⃣ Trivy Security",
+              "value": "'"${TRIVY_STATUS}"'",
+              "inline": true
+            },
+            {
+              "name": "4️⃣ Playwright E2E",
+              "value": "'"${PLAYWRIGHT_STATUS}"'",
+              "inline": true
+            },
+            {
+              "name": "📊 Success Rate",
+              "value": "**'"${{ steps.summary.outputs.success_count }}/4"'** test suites passed",
+              "inline": false
+            },
+            {
+              "name": "🌿 Branch",
+              "value": "`'"${{ github.ref_name }}"'`",
+              "inline": true
+            },
+            {
+              "name": "👤 Triggered by",
+              "value": "'"${{ github.actor }}"'",
+              "inline": true
+            },
+            {
+              "name": "🔗 Details",
+              "value": "[View Full Report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})",
+              "inline": false
+            }
+          ]'
+          
+          # Send to Discord with rich embed
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Content-Type: application/json" \
+            -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+            -d '{
+              "username": "GitHub CI/CD Bot",
+              "avatar_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+              "embeds": [{
+                "title": "'"${{ steps.summary.outputs.status_emoji }} Test Pipeline Completed"'",
+                "description": "**'"${{ steps.summary.outputs.overall_status }}"'**\n\nAutomated test results from GitHub Actions pipeline.",
+                "color": '"$COLOR"',
+                "fields": '"$FIELDS"',
+                "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'",
+                "footer": {
+                  "text": "GitHub Actions • web_project",
+                  "icon_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+                },
+                "author": {
+                  "name": "'"${{ github.repository }}"'",
+                  "url": "${{ github.server_url }}/${{ github.repository }}",
+                  "icon_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+                }
+              }]
+            }')
+          
+          # Check if notification was sent successfully
+          if [[ "$HTTP_CODE" -eq 204 || "$HTTP_CODE" -eq 200 ]]; then
+            echo "✅ Discord notification sent successfully! (HTTP $HTTP_CODE)"
+          else
+            echo "⚠️ Failed to send Discord notification (HTTP $HTTP_CODE)"
+            echo "Check your DISCORD_WEBHOOK_URL in GitHub Secrets"
+          fi
+
