@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { getDefaultHeaders, getAuthHeaders } = require('../utils/apiHelpers');
 
 // Backend API is accessible via subdomain api.lightoptimization.io.vn
 const BASE_URL = process.env.API_URL || 'https://api.lightoptimization.io.vn';
@@ -9,6 +10,7 @@ test.describe('API Tests', () => {
   test.beforeAll(async ({ request }) => {
     // Login to get access token with real user
     const response = await request.post(`${BASE_URL}/api/users/login`, {
+      headers: getDefaultHeaders(),
       data: {
         email: 'haichu321@gmail.com',
         password: 'H@ichu321'
@@ -22,7 +24,9 @@ test.describe('API Tests', () => {
   });
 
   test('TC031 - API Health check', async ({ request }) => {
-    const response = await request.get(`${BASE_URL}/api/health`);
+    const response = await request.get(`${BASE_URL}/api/health`, {
+      headers: getDefaultHeaders()
+    });
     
     expect(response.ok()).toBeTruthy();
     const data = await response.json();
@@ -31,6 +35,7 @@ test.describe('API Tests', () => {
 
   test('TC032 - Login API with valid credentials', async ({ request }) => {
     const response = await request.post(`${BASE_URL}/api/users/login`, {
+      headers: getDefaultHeaders(),
       data: {
         email: 'haichu321@gmail.com',
         password: 'H@ichu321'
@@ -45,6 +50,7 @@ test.describe('API Tests', () => {
 
   test('TC033 - Login API with invalid credentials', async ({ request }) => {
     const response = await request.post(`${BASE_URL}/api/users/login`, {
+      headers: getDefaultHeaders(),
       data: {
         email: 'invalid@email.com',
         password: 'wrongpass'
@@ -61,9 +67,7 @@ test.describe('API Tests', () => {
     }
 
     const response = await request.get(`${BASE_URL}/api/sensor-data`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
+      headers: getAuthHeaders(accessToken)
     });
     
     expect(response.ok()).toBeTruthy();
@@ -72,13 +76,16 @@ test.describe('API Tests', () => {
   });
 
   test('TC035 - Get sensor data without authentication', async ({ request }) => {
-    const response = await request.get(`${BASE_URL}/api/sensor-data`);
+    const response = await request.get(`${BASE_URL}/api/sensor-data`, {
+      headers: getDefaultHeaders()
+    });
     
     expect(response.status()).toBe(401);
   });
 
   test('TC036 - Send sensor data to IoT endpoint', async ({ request }) => {
     const response = await request.post(`${BASE_URL}/api/receive-data`, {
+      headers: getDefaultHeaders(),
       data: {
         sensor_name: 'test-sensor-playwright',
         light_value: 500,
@@ -100,9 +107,7 @@ test.describe('API Tests', () => {
     }
 
     const response = await request.get(`${BASE_URL}/api/sensors`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
+      headers: getAuthHeaders(accessToken)
     });
     
     expect(response.ok()).toBeTruthy();
@@ -112,6 +117,7 @@ test.describe('API Tests', () => {
     const randomEmail = `test_${Date.now()}@example.com`;
     
     const response = await request.post(`${BASE_URL}/api/users/register`, {
+      headers: getDefaultHeaders(),
       data: {
         email: randomEmail,
         password: 'testpass123'
@@ -123,14 +129,18 @@ test.describe('API Tests', () => {
   });
 
   test('TC039 - API returns JSON content type', async ({ request }) => {
-    const response = await request.get(`${BASE_URL}/api/health`);
+    const response = await request.get(`${BASE_URL}/api/health`, {
+      headers: getDefaultHeaders()
+    });
     
     const contentType = response.headers()['content-type'];
     expect(contentType).toContain('application/json');
   });
 
   test('TC040 - CORS headers are set', async ({ request }) => {
-    const response = await request.get(`${BASE_URL}/api/health`);
+    const response = await request.get(`${BASE_URL}/api/health`, {
+      headers: getDefaultHeaders()
+    });
     
     const headers = response.headers();
     // Check if CORS is configured (may or may not have this header depending on origin)

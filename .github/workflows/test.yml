@@ -158,7 +158,7 @@ jobs:
         working-directory: playwright
         env:
           BASE_URL: https://lightoptimization.io.vn
-          API_URL: https://lightoptimization.io.vn/api
+          API_URL: https://api.lightoptimization.io.vn
         continue-on-error: true
 
       # 8. Upload Playwright report
