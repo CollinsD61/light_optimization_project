@@ -45,6 +45,12 @@ module.exports = defineConfig({
     
     /* Viewport */
     viewport: { width: 1280, height: 720 },
+    
+    /* Ensure Playwright User-Agent is preserved for rate limiting skip */
+    extraHTTPHeaders: {
+      // Keep Playwright in User-Agent for backend rate limiting detection
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Playwright/1.40.0'
+    },
   },
 
   /* Configure projects for major browsers */
