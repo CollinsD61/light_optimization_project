@@ -38,7 +38,7 @@ jobs:
             -e "ssh -o StrictHostKeyChecking=no" \
             ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/root/web_project/
 
-      # SSH and deploy Docker Compose (Node.js Backend)
+      # SSH and deploy Docker Compose (Node.js  Backend)
       - name: SSH and deploy Docker Compose
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
