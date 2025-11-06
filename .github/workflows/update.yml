@@ -60,21 +60,38 @@ jobs:
             
             echo '🔍 Detecting changes to determine which containers to rebuild...'
             
-            # Detect changes in source code
+            # Detect changes in source code by comparing with last deployment markers
             FE_CHANGED=false
             BE_CHANGED=false
             
-            if git diff --quiet HEAD~1 HEAD -- FE/ 2>/dev/null; then
-              echo '✅ Frontend: No changes detected, will use cache'
+            # Create marker directory if not exists
+            mkdir -p .deploy-markers
+            
+            # Check Frontend changes
+            if [ -f .deploy-markers/fe-last-deploy ]; then
+              FE_NEWER=\$(find FE -type f -newer .deploy-markers/fe-last-deploy 2>/dev/null | wc -l)
+              if [ \"\$FE_NEWER\" -gt 0 ]; then
+                echo '🔄 Frontend: Changes detected (\$FE_NEWER files modified), will rebuild'
+                FE_CHANGED=true
+              else
+                echo '✅ Frontend: No changes detected, will use cache'
+              fi
             else
-              echo '🔄 Frontend: Changes detected, will rebuild'
+              echo '🆕 Frontend: First deployment, will build'
               FE_CHANGED=true
             fi
             
-            if git diff --quiet HEAD~1 HEAD -- BE_nodejs/ 2>/dev/null; then
-              echo '✅ Backend: No changes detected, will use cache'
+            # Check Backend changes
+            if [ -f .deploy-markers/be-last-deploy ]; then
+              BE_NEWER=\$(find BE_nodejs -type f -newer .deploy-markers/be-last-deploy 2>/dev/null | wc -l)
+              if [ \"\$BE_NEWER\" -gt 0 ]; then
+                echo '🔄 Backend: Changes detected (\$BE_NEWER files modified), will rebuild'
+                BE_CHANGED=true
+              else
+                echo '✅ Backend: No changes detected, will use cache'
+              fi
             else
-              echo '🔄 Backend: Changes detected, will rebuild'
+              echo '🆕 Backend: First deployment, will build'
               BE_CHANGED=true
             fi
             
@@ -86,12 +103,19 @@ jobs:
             if [ \"\$FE_CHANGED\" = true ] && [ \"\$BE_CHANGED\" = true ]; then
               echo '🔨 Building both Frontend and Backend (with cache)...'
               docker compose build frontend backend
+              # Update both markers
+              touch .deploy-markers/fe-last-deploy
+              touch .deploy-markers/be-last-deploy
             elif [ \"\$FE_CHANGED\" = true ]; then
               echo '🔨 Building Frontend only (with cache)...'
               docker compose build frontend
+              # Update FE marker only
+              touch .deploy-markers/fe-last-deploy
             elif [ \"\$BE_CHANGED\" = true ]; then
               echo '🔨 Building Backend only (with cache)...'
               docker compose build backend
+              # Update BE marker only
+              touch .deploy-markers/be-last-deploy
             else
               echo '✅ No source changes, using existing images'
             fi
