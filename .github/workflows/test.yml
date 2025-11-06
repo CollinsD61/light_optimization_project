@@ -176,22 +176,38 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             # Manual trigger - use selected test suite
-            TEST_SUITE="${{ github.event.inputs.test_suite }}"
+            TEST_SUITE="${{ github.event.inputs.test_suite || 'regression' }}"
             echo "🎯 Running test suite: $TEST_SUITE"
-            npx playwright test --project=$TEST_SUITE --reporter=json,list > playwright-output.txt 2>&1 || true
+            npx playwright test --project=$TEST_SUITE --reporter=json,list 2>&1 || true
           else
             # Auto trigger after deployment - run regression tests
+            TEST_SUITE="regression"
             echo "🔄 Running full regression test suite"
-            npx playwright test --project=regression --reporter=json,list > playwright-output.txt 2>&1 || true
+            npx playwright test --project=regression --reporter=json,list 2>&1 || true
           fi
           
+          # Display test output
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📊 Playwright Test Execution Summary"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          
+          # List all files in playwright directory for debugging
+          echo "🔍 Checking for test result files..."
+          ls -la test-results/ 2>/dev/null || echo "⚠️ test-results/ directory not found"
+          
           # Extract test statistics from JSON report
-          if [ -f "test-results/results.json" ]; then
-            TOTAL_TESTS=$(jq -r '.suites[].specs | length' test-results/results.json | awk '{s+=$1} END {print s}')
-            PASSED_TESTS=$(jq -r '[.suites[].specs[].tests[] | select(.results[].status == "passed")] | length' test-results/results.json)
-            FAILED_TESTS=$(jq -r '[.suites[].specs[].tests[] | select(.results[].status == "failed")] | length' test-results/results.json)
-            SKIPPED_TESTS=$(jq -r '[.suites[].specs[].tests[] | select(.results[].status == "skipped")] | length' test-results/results.json)
-            DURATION=$(jq -r '.suites[].specs[].tests[].results[].duration' test-results/results.json | awk '{s+=$1} END {printf "%.1f", s/1000}')
+          RESULTS_FILE="test-results/results.json"
+          if [ -f "$RESULTS_FILE" ]; then
+            echo "✅ Found test results at: $RESULTS_FILE"
+            
+            # Parse JSON report with better error handling
+            TOTAL_TESTS=$(jq -r '[.suites[].specs[]] | length' "$RESULTS_FILE" 2>/dev/null || echo "0")
+            PASSED_TESTS=$(jq -r '[.suites[].specs[].tests[] | select(.results[].status == "passed")] | length' "$RESULTS_FILE" 2>/dev/null || echo "0")
+            FAILED_TESTS=$(jq -r '[.suites[].specs[].tests[] | select(.results[].status == "failed")] | length' "$RESULTS_FILE" 2>/dev/null || echo "0")
+            SKIPPED_TESTS=$(jq -r '[.suites[].specs[].tests[] | select(.results[].status == "skipped")] | length' "$RESULTS_FILE" 2>/dev/null || echo "0")
+            DURATION=$(jq -r '[.suites[].specs[].tests[].results[].duration] | add / 1000' "$RESULTS_FILE" 2>/dev/null || echo "0")
+            
+            echo "📊 Total: $TOTAL_TESTS | ✅ Passed: $PASSED_TESTS | ❌ Failed: $FAILED_TESTS | ⏭️ Skipped: $SKIPPED_TESTS | ⏱️ Duration: ${DURATION}s"
             
             echo "test_total=$TOTAL_TESTS" >> $GITHUB_OUTPUT
             echo "test_passed=$PASSED_TESTS" >> $GITHUB_OUTPUT
@@ -199,11 +215,15 @@ jobs:
             echo "test_skipped=$SKIPPED_TESTS" >> $GITHUB_OUTPUT
             echo "test_duration=${DURATION}s" >> $GITHUB_OUTPUT
           else
-            echo "test_total=N/A" >> $GITHUB_OUTPUT
-            echo "test_passed=N/A" >> $GITHUB_OUTPUT
-            echo "test_failed=N/A" >> $GITHUB_OUTPUT
-            echo "test_skipped=N/A" >> $GITHUB_OUTPUT
-            echo "test_duration=N/A" >> $GITHUB_OUTPUT
+            echo "⚠️ Test results file not found at: $RESULTS_FILE"
+            echo "📁 Available files:"
+            find . -name "*.json" -type f 2>/dev/null | head -10
+            
+            echo "test_total=0" >> $GITHUB_OUTPUT
+            echo "test_passed=0" >> $GITHUB_OUTPUT
+            echo "test_failed=0" >> $GITHUB_OUTPUT
+            echo "test_skipped=0" >> $GITHUB_OUTPUT
+            echo "test_duration=0s" >> $GITHUB_OUTPUT
           fi
         working-directory: playwright
         env:
