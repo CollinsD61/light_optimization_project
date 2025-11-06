@@ -41,6 +41,10 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
             cd /root/web_project &&
             
+            # Enable Docker BuildKit for better layer caching
+            export DOCKER_BUILDKIT=1
+            export COMPOSE_DOCKER_CLI_BUILD=1
+            
             # Hạ cấp React và ReactDOM xuống phiên bản 18 (Frontend)
             cd FE && 
             sed -i 's/\"react\": \"^19.0.0\"/\"react\": \"^18.2.0\"/g' package.json &&
@@ -54,11 +58,51 @@ jobs:
             npm install @headlessui/react @heroicons/react --save &&
             cd .. &&
             
-            # Xóa các container cũ và build lại (Node.js Backend)
-            docker compose down || true &&
-            docker compose build --no-cache frontend backend &&
-            docker compose up -d &&
-            docker image prune -af
+            echo '🔍 Detecting changes to determine which containers to rebuild...'
+            
+            # Detect changes in source code
+            FE_CHANGED=false
+            BE_CHANGED=false
+            
+            if git diff --quiet HEAD~1 HEAD -- FE/ 2>/dev/null; then
+              echo '✅ Frontend: No changes detected, will use cache'
+            else
+              echo '🔄 Frontend: Changes detected, will rebuild'
+              FE_CHANGED=true
+            fi
+            
+            if git diff --quiet HEAD~1 HEAD -- BE_nodejs/ 2>/dev/null; then
+              echo '✅ Backend: No changes detected, will use cache'
+            else
+              echo '🔄 Backend: Changes detected, will rebuild'
+              BE_CHANGED=true
+            fi
+            
+            # Stop running containers
+            echo '⏹️  Stopping containers...'
+            docker compose down || true
+            
+            # Smart rebuild - only rebuild changed services
+            if [ \"\$FE_CHANGED\" = true ] && [ \"\$BE_CHANGED\" = true ]; then
+              echo '🔨 Building both Frontend and Backend (with cache)...'
+              docker compose build frontend backend
+            elif [ \"\$FE_CHANGED\" = true ]; then
+              echo '🔨 Building Frontend only (with cache)...'
+              docker compose build frontend
+            elif [ \"\$BE_CHANGED\" = true ]; then
+              echo '🔨 Building Backend only (with cache)...'
+              docker compose build backend
+            else
+              echo '✅ No source changes, using existing images'
+            fi
+            
+            # Start all containers
+            echo '🚀 Starting containers...'
+            docker compose up -d
+            
+            # Clean up dangling images only (not all images)
+            echo '🧹 Cleaning up dangling images...'
+            docker image prune -f
           "
 
       # Verify Node.js Backend health
