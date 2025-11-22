@@ -55,8 +55,17 @@ const Dashboard = () => {
             // Lọc theo khoảng ngày nếu được chọn
             const filtered = data.filter(d => {
                 const ts = new Date(d.timestamp);
-                const startOK = startDate ? new Date(startDate) <= ts : true;
-                const endOK = endDate ? ts <= new Date(endDate) : true;
+                
+                // Set start of day (00:00:00) for startDate
+                const start = startDate ? new Date(startDate) : null;
+                if (start) start.setHours(0, 0, 0, 0);
+                
+                // Set end of day (23:59:59) for endDate
+                const end = endDate ? new Date(endDate) : null;
+                if (end) end.setHours(23, 59, 59, 999);
+                
+                const startOK = start ? start <= ts : true;
+                const endOK = end ? ts <= end : true;
                 return startOK && endOK;
             });
 
@@ -582,6 +591,7 @@ const Dashboard = () => {
                                 <input 
                                     type="date" 
                                     value={startDate} 
+                                    max={new Date().toISOString().split('T')[0]}
                                     onChange={(e) => {
                                         setStartDate(e.target.value);
                                         setActiveQuickFilter('');
@@ -607,6 +617,7 @@ const Dashboard = () => {
                                 <input 
                                     type="date" 
                                     value={endDate} 
+                                    max={new Date().toISOString().split('T')[0]}
                                     onChange={(e) => {
                                         setEndDate(e.target.value);
                                         setActiveQuickFilter('');
