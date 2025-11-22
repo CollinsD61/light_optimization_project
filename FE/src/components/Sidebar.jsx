@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Bell, LayoutDashboard, Settings, Menu, Map } from 'lucide-react';
+import { Home, Bell, LayoutDashboard, Settings, Menu, Map, Bug } from 'lucide-react';
 import { useState } from 'react';
 
 const Sidebar = ({ collapsed, setCollapsed }) => {
@@ -29,6 +29,9 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
                 </NavLink>
                 <NavLink to="/mainlayout/settings" className={({ isActive }) => isActive ? 'bg-gray-700 rounded px-4 py-2 flex items-center gap-2' : 'px-4 py-2 flex items-center gap-2 hover:bg-blue-700 rounded'}>
                     <Settings size={18} /> {!collapsed && 'Settings'}
+                </NavLink>
+                <NavLink to="/mainlayout/debug" className={({ isActive }) => isActive ? 'bg-purple-700 rounded px-4 py-2 flex items-center gap-2' : 'px-4 py-2 flex items-center gap-2 hover:bg-purple-700 rounded'}>
+                    <Bug size={18} /> {!collapsed && 'Debug'}
                 </NavLink>
             </nav>
         </div>
