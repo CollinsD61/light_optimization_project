@@ -376,53 +376,7 @@ const SensorMap = () => {
     // Frontend chỉ cần reload data từ API
     console.log('[Frontend] updateSensorsBattery is deprecated, reloading from API instead');
     await loadSensorData();
-    return;
-    
-    /* LEGACY CODE - KHÔNG DÙNG NỮA
-    try {
-      console.log('Manual battery update triggered');
-      for (const sensor of sensorList) {
-        // Sử dụng smartUpdateBattery thay vì calculateBatteryLevel
-        const newBatteryLevel = await BatteryService.smartUpdateBattery(sensor.id);
-        
-        if (newBatteryLevel !== null) {
-          setSensors(prevSensors => 
-            prevSensors.map(s => 
-              s.id === sensor.id 
-                ? { ...s, battery: newBatteryLevel, batteryLastUpdated: new Date().toISOString() }
-                : s
-            )
-          );
-        }
-      }
-    } catch (error) {
-      console.error('Error updating sensors battery:', error);
-    }
   };
-
-  // Thêm listener cho realtime updates
-  useEffect(() => {
-    if (sensors.length > 0) {
-      const unsubscribers = sensors.map(sensor => {
-        return BatteryService.listenToBatteryChanges(sensor.id, (snapshot) => {
-          if (snapshot.exists()) {
-            const batteryData = snapshot.val();
-            setSensors(prevSensors => 
-              prevSensors.map(s => 
-                s.id === sensor.id 
-                  ? { ...s, battery: batteryData.level, batteryLastUpdated: batteryData.timestamp }
-                  : s
-              )
-            );
-          }
-        });
-      });
-
-      return () => {
-        unsubscribers.forEach(unsubscribe => unsubscribe());
-      };
-    }
-  }, [sensors.length]);
 
   const getSensorStatus = (temp, humidity, light) => {
     // Logic to determine sensor status based on readings
