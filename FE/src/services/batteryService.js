@@ -81,12 +81,6 @@ export class BatteryService {
     console.log('Minutes passed:', minutesDiff.toFixed(2));
     console.log('Initial battery:', initialBattery + '%');
     
-    // Kiểm tra nếu đã quá 1 tiếng 10 phút (70 phút) mà không có cập nhật
-    if (minutesDiff > this.BATTERY_TIMEOUT_MINUTES) {
-      console.log(`Quá ${this.BATTERY_TIMEOUT_MINUTES} phút (1 tiếng 10 phút) không có cập nhật. Đặt pin về 0%.`);
-      return 0;
-    }
-    
     // Chỉ tính toán nếu đã qua ít nhất 1 phút
     if (minutesDiff < 1) {
       console.log('Chưa đủ 1 phút, không thay đổi mức pin');
@@ -98,13 +92,18 @@ export class BatteryService {
     const batteryDropPerMinute = 0.006944; // 100 / (10 * 24 * 60)
     const batteryDrop = minutesDiff * batteryDropPerMinute;
     
-    // CHO PHÉP PIN VỀ 0%
+    // CHO PHÉP PIN VỀ 0% - Pin tự nhiên giảm xuống 0% theo thời gian
     const currentBattery = Math.max(0, initialBattery - batteryDrop);
     
     console.log('Tốc độ giảm pin:', batteryDropPerMinute.toFixed(6) + '% mỗi phút (~0.42% mỗi giờ, 10% mỗi ngày)');
     console.log('Tổng pin đã giảm:', batteryDrop.toFixed(2) + '%');
     console.log('Mức pin mới:', currentBattery.toFixed(2) + '%');
-    console.log('Thời gian còn lại:', (currentBattery / batteryDropPerMinute / 60 / 24).toFixed(2) + ' ngày');
+    
+    if (currentBattery > 0) {
+      console.log('Thời gian còn lại:', (currentBattery / batteryDropPerMinute / 60 / 24).toFixed(2) + ' ngày');
+    } else {
+      console.log('⚠️ Pin đã hết! (Không có data mới trong ' + minutesDiff.toFixed(0) + ' phút)');
+    }
     console.log('=== KẾT THÚC TÍNH TOÁN ===');
     
     return Math.round(currentBattery);
@@ -149,12 +148,8 @@ export class BatteryService {
       const lastUpdate = new Date(batteryData.timestamp);
       const minutesSinceUpdate = (now - lastUpdate) / (1000 * 60);
       
-      // Kiểm tra nếu đã quá 1 tiếng 10 phút (70 phút) mà không có cập nhật
-      if (minutesSinceUpdate > this.BATTERY_TIMEOUT_MINUTES) {
-        console.log(`Không có cập nhật trong hơn ${this.BATTERY_TIMEOUT_MINUTES} phút (1 tiếng 10 phút). Đặt pin về 0%.`);
-        await this.updateBattery(sensorId, 0);
-        return 0;
-      }
+      // ❌ ĐÃ XÓA: Logic check 70 phút theo battery update (Option 1)
+      // Giờ chỉ check theo lần nhận DATA từ sensor (Option 2 - xem isSensorAlive())
       
       // Chỉ cập nhật nếu đã quá 1 phút kể từ lần cập nhật cuối
       if (minutesSinceUpdate >= 1) {

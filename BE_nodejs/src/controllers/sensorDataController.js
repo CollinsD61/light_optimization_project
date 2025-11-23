@@ -1,5 +1,6 @@
 const db = require('../models');
 const { Op } = require('sequelize');
+const BatteryService = require('../services/batteryService');
 
 // Get all sensor data with pagination and filtering
 const getSensorData = async (req, res, next) => {
@@ -168,6 +169,11 @@ const receiveSensorData = async (req, res, next) => {
     });
 
     console.log('Dữ liệu đã được ghi thành công:', sensorData.id);
+
+    // 📡 GHI NHẬN LẦN NHẬN DATA CUỐI CÙNG VÀO FIREBASE
+    // Map sensor_name → Firebase sensor ID
+    const sensorFirebaseId = 'hcm-device-01'; // TODO: Mapping logic if needed
+    await BatteryService.recordDataReceived(sensorFirebaseId);
 
     res.status(201).json({ 
       message: 'Dữ liệu đã được ghi thành công.',

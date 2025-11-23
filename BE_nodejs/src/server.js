@@ -2,6 +2,7 @@ require('dotenv').config();
 const app = require('./app');
 const db = require('./models');
 const config = require('./config/config');
+const { startBatteryUpdateJob } = require('./jobs/batteryUpdateJob');
 
 const PORT = config.port;
 
@@ -25,6 +26,10 @@ const startServer = async () => {
       console.log(`🌐 Server URL: http://localhost:${PORT}`);
       console.log(`📡 API Base URL: http://localhost:${PORT}/api`);
       console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
+      
+      // Start battery update cron job
+      console.log('\n🔋 Initializing battery update service...');
+      startBatteryUpdateJob();
     });
   } catch (error) {
     console.error('❌ Unable to connect to the database:', error);
