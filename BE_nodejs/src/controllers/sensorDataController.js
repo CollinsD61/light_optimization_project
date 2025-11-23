@@ -274,9 +274,21 @@ const getSensorDataWithBattery = async (req, res, next) => {
     let batteryLevel = 100;
     let batteryData = null;
     
+    console.log('[API] Attempting to fetch battery from Firebase...');
+    
     try {
       const batteryRef = database.ref(`sensors/${sensorId}/battery`);
-      const snapshot = await batteryRef.once('value');
+      console.log('[API] Firebase ref created, calling once()...');
+      
+      // Set timeout for Firebase call (max 3 seconds)
+      const batteryPromise = batteryRef.once('value');
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Firebase timeout')), 3000)
+      );
+      
+      const snapshot = await Promise.race([batteryPromise, timeoutPromise]);
+      console.log('[API] Firebase snapshot received');
+      
       batteryData = snapshot.val();
       
       if (batteryData && batteryData.level !== undefined) {
@@ -289,6 +301,8 @@ const getSensorDataWithBattery = async (req, res, next) => {
       console.warn('[API] Firebase error (using default battery 100%):', firebaseError.message);
       // Continue with default battery level
     }
+    
+    console.log('[API] Battery fetch completed, preparing response...');
     
     console.log(`[API] Returning ${sensorData.length} records with battery: ${batteryLevel}%`);
     
