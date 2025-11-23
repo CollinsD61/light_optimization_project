@@ -45,16 +45,16 @@ export class BatteryService {
     }
   }
 
-  // Đặt lại pin về 86 (để test)
-  static async resetBatteryTo86(sensorId) {
+  // Đặt lại pin về 100% (để test)
+  static async resetBatteryTo100(sensorId) {
     try {
       const batteryRef = ref(database, `sensors/${sensorId}/battery`);
       await set(batteryRef, {
-        level: 86,
+        level: 100,
         timestamp: new Date().toISOString(),
         lastUpdated: Date.now()
       });
-      console.log(`Battery reset to 86% for ${sensorId}`);
+      console.log(`Battery reset to 100% for ${sensorId}`);
       return true;
     } catch (error) {
       console.error('Error resetting battery:', error);
@@ -93,16 +93,18 @@ export class BatteryService {
       return initialBattery;
     }
     
-    // Tốc độ tụt pin: 0.01% mỗi phút = 6% mỗi giờ
-    const batteryDropPerMinute = 0.01;
+    // Tốc độ tụt pin: 0.006944% mỗi phút = 0.4167% mỗi giờ = 10% mỗi ngày
+    // 100% pin sẽ hết trong 10 ngày (14,400 phút)
+    const batteryDropPerMinute = 0.006944; // 100 / (10 * 24 * 60)
     const batteryDrop = minutesDiff * batteryDropPerMinute;
     
     // CHO PHÉP PIN VỀ 0%
     const currentBattery = Math.max(0, initialBattery - batteryDrop);
     
-    console.log('Tốc độ giảm pin:', batteryDropPerMinute + '% mỗi phút');
+    console.log('Tốc độ giảm pin:', batteryDropPerMinute.toFixed(6) + '% mỗi phút (~0.42% mỗi giờ, 10% mỗi ngày)');
     console.log('Tổng pin đã giảm:', batteryDrop.toFixed(2) + '%');
     console.log('Mức pin mới:', currentBattery.toFixed(2) + '%');
+    console.log('Thời gian còn lại:', (currentBattery / batteryDropPerMinute / 60 / 24).toFixed(2) + ' ngày');
     console.log('=== KẾT THÚC TÍNH TOÁN ===');
     
     return Math.round(currentBattery);

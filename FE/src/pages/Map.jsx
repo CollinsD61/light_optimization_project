@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, LayersControl, ZoomControl, FeatureGroup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, LayersControl, ZoomControl, FeatureGroup, useMap } from 'react-leaflet';
 import { EditControl } from 'react-leaflet-draw';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
@@ -85,6 +85,30 @@ const customIcon = (status, battery = 100, deviceType = 'default', isSelected = 
     iconAnchor: [20, 40],
     popupAnchor: [0, -40]
   });
+};
+
+// Component để auto-fit map bounds
+const MapBoundsHandler = ({ sensors }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (sensors && sensors.length > 0) {
+      // Tạo bounds từ tất cả sensor positions
+      const bounds = L.latLngBounds(
+        sensors.map(sensor => [sensor.lat, sensor.lng])
+      );
+      
+      // Fit bounds với padding để không zoom quá gần
+      map.fitBounds(bounds, {
+        padding: [50, 50], // Padding 50px mỗi bên
+        maxZoom: 14, // Không zoom gần hơn level 14
+        animate: true,
+        duration: 1
+      });
+    }
+  }, [sensors, map]);
+  
+  return null;
 };
 
 const SensorMap = () => {
@@ -305,49 +329,48 @@ const SensorMap = () => {
         const sortedData = data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         const latest = sortedData[0];
         
-        // Lấy giá trị pin từ Firebase
-        const batteryData = await BatteryService.getBattery('hcm-device-01');
-        console.log('Battery data from Firebase:', batteryData);
+        // Xử lý tín hiệu mới từ sensor (auto reset pin nếu cần)
+        console.log('📡 New sensor data received, handling signal...');
+        const newBatteryLevel = await BatteryService.handleNewSignal('hcm-device-01');
+        console.log('Battery after signal handling:', newBatteryLevel);
         
-        let batteryLevel = 86; // Default value
+        let batteryLevel = newBatteryLevel || 100; // Use signal result or default
         
-        if (batteryData && batteryData.level !== undefined) {
-          // Có dữ liệu pin trên Firebase
-          console.log('Found existing battery data:', batteryData);
+        // Nếu pin không phải 100% (không phải mới reset), tính toán decay
+        if (newBatteryLevel !== 100 && newBatteryLevel !== null) {
+          const batteryData = await BatteryService.getBattery('hcm-device-01');
           
-          // Tính toán pin mới dựa trên thời gian đã trôi qua
-          const calculatedBattery = BatteryService.calculateBatteryLevel(
-            batteryData.timestamp, 
-            batteryData.level
-          );
-          
-          console.log('Original battery:', batteryData.level);
-          console.log('Calculated battery after time:', calculatedBattery);
-          
-          // Nếu pin đã thay đổi đáng kể (>= 1%), cập nhật lên Firebase
-          if (Math.abs(calculatedBattery - batteryData.level) >= 1) {
-            console.log(`Battery changed from ${batteryData.level}% to ${calculatedBattery}%`);
-            await BatteryService.updateBattery('hcm-device-01', calculatedBattery);
-            batteryLevel = calculatedBattery;
-          } else {
-            console.log('Battery change too small, keeping original value');
-            batteryLevel = batteryData.level;
+          if (batteryData && batteryData.level !== undefined) {
+            // Tính toán pin mới dựa trên thời gian đã trôi qua
+            const calculatedBattery = BatteryService.calculateBatteryLevel(
+              batteryData.timestamp, 
+              batteryData.level
+            );
+            
+            console.log('Original battery:', batteryData.level);
+            console.log('Calculated battery after time:', calculatedBattery);
+            
+            // Nếu pin đã thay đổi đáng kể (>= 1%), cập nhật lên Firebase
+            if (Math.abs(calculatedBattery - batteryData.level) >= 1) {
+              console.log(`Battery changed from ${batteryData.level}% to ${calculatedBattery}%`);
+              await BatteryService.updateBattery('hcm-device-01', calculatedBattery);
+              batteryLevel = calculatedBattery;
+            } else {
+              console.log('Battery change too small, keeping original value');
+              batteryLevel = batteryData.level;
+            }
           }
-        } else {
-          // Chưa có dữ liệu, khởi tạo lần đầu
-          console.log('No Firebase data found, initializing with:', batteryLevel);
-          await BatteryService.updateBattery('hcm-device-01', batteryLevel);
         }
         
         const sensorData = {
           id: 'hcm-device-01',
           sensor_id: 'hcm-device-01',
-          name: 'Cảm biến độ ẩm TP.HCM',
-          lat: 10.7769,
-          lng: 106.7009,
+          name: 'Cảm biến độ ẩm Phan Thiết',
+          lat: 10.9287,
+          lng: 108.1022,
           type: 'humidity',
           deviceType: 'humidity',
-          location: 'Quận 1, TP. Hồ Chí Minh',
+          location: 'Phan Thiết, Bình Thuận',
           timestamp: latest.timestamp,
           light: latest.light_value || 0,
           temperature: latest.temperature || 0,
@@ -757,6 +780,9 @@ const forceSyncBattery = async () => {
                   url={mapTiles[mapStyle].url}
                 />
                 
+                {/* Auto-fit bounds khi có sensors */}
+                <MapBoundsHandler sensors={filteredSensors} />
+                
                 {filteredSensors.map(sensor => {
                   const status = getSensorStatus(sensor.temperature, sensor.humidity, sensor.light);
                   return (
@@ -864,9 +890,9 @@ const forceSyncBattery = async () => {
                                 Pin:
                               </span> 
                               <span className={`font-medium ${
-                                (sensor.battery || 0) > 50 ? 'text-green-400' : 
-                                (sensor.battery || 0) > 20 ? 'text-yellow-400' : 'text-red-400'
-                              }`}>{sensor.battery || 100}%</span>
+                                (sensor.battery ?? 100) > 50 ? 'text-green-400' : 
+                                (sensor.battery ?? 100) > 20 ? 'text-yellow-400' : 'text-red-400'
+                              }`}>{sensor.battery !== undefined ? sensor.battery : 100}%</span>
                             </div>
                           </div>
                           
@@ -904,6 +930,30 @@ const forceSyncBattery = async () => {
                 
                 <div className="leaflet-custom-controls">
                   <div className="leaflet-custom-control-container">
+                    {/* Fit all sensors button */}
+                    <button 
+                      onClick={() => {
+                        if (mapRef.current && filteredSensors.length > 0) {
+                          const bounds = L.latLngBounds(
+                            filteredSensors.map(sensor => [sensor.lat, sensor.lng])
+                          );
+                          mapRef.current.fitBounds(bounds, {
+                            padding: [50, 50],
+                            maxZoom: 14,
+                            animate: true,
+                            duration: 1.5
+                          });
+                        }
+                      }}
+                      className="custom-map-button mb-2"
+                      title="Hiển thị tất cả sensors"
+                    >
+                      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                      </svg>
+                    </button>
+                    
+                    {/* Back to center button */}
                     <button 
                       onClick={() => {
                         mapRef.current?.flyTo([21.0285, 105.8542], 13, {
@@ -1095,19 +1145,19 @@ const forceSyncBattery = async () => {
             <div className="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
               <div 
                 className={`h-full ${
-                  (sensor.battery || 0) > 50 ? 'bg-green-500' : 
-                  (sensor.battery || 0) > 20 ? 'bg-yellow-500' : 
+                  (sensor.battery ?? 100) > 50 ? 'bg-green-500' : 
+                  (sensor.battery ?? 100) > 20 ? 'bg-yellow-500' : 
                   'bg-red-500'
                 }`}
-                style={{ width: `${sensor.battery || 0}%` }}
+                style={{ width: `${sensor.battery !== undefined ? sensor.battery : 100}%` }}
               ></div>
             </div>
             <span className={`text-xs mt-1 inline-block ${
-              (sensor.battery || 0) > 50 ? 'text-green-400' : 
-              (sensor.battery || 0) > 20 ? 'text-yellow-400' : 
+              (sensor.battery ?? 100) > 50 ? 'text-green-400' : 
+              (sensor.battery ?? 100) > 20 ? 'text-yellow-400' : 
               'text-red-400'
             }`}>
-              {sensor.battery || 0}%
+              {sensor.battery !== undefined ? sensor.battery : 100}%
             </span>
           </td>
           <td className="px-6 py-4 whitespace-nowrap">

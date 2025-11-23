@@ -38,7 +38,7 @@ function LoginPage() {
             document.getElementById('google-login-status').innerHTML = 
                 '<div class="flex items-center text-green-600"><svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Đăng nhập thành công!</div>';
             
-            setTimeout(() => navigate('/mainlayout'), 800);
+            setTimeout(() => navigate('/mainlayout/home'), 800);
         } catch (error) {
             console.error('Lỗi Google login:', error.response?.data || error.message);
             setLoginError('Đăng nhập bằng Google thất bại. Vui lòng thử lại.');
@@ -130,7 +130,7 @@ function LoginPage() {
                                 localStorage.setItem('access_token', data.access);
                                 localStorage.setItem('refresh_token', data.refresh);
                                 localStorage.setItem('user_email', values.email);
-                                navigate('/mainlayout');
+                                navigate('/mainlayout/home');
                             } catch (error) {
                                 setLoginError(error.detail || 'Email hoặc mật khẩu không đúng.');
                             } finally {

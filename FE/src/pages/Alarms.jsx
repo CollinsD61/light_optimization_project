@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
+import { fetchSensorData } from '../api';
+import { BatteryService } from '../services/batteryService';
 
 const Alarms = () => {
     const [alarms, setAlarms] = useState([]);
@@ -8,6 +10,8 @@ const Alarms = () => {
     const [selectedTab, setSelectedTab] = useState('all');
     const [showAddModal, setShowAddModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [sensorData, setSensorData] = useState(null);
+    const [batteryLevel, setBatteryLevel] = useState(100);
     const [newAlarm, setNewAlarm] = useState({
         name: '',
         device: '',
@@ -17,75 +21,122 @@ const Alarms = () => {
         enabled: true
     });
 
-    // Fetch dữ liệu cảnh báo từ API
+    // Fetch dữ liệu cảnh báo từ sensor thực
     useEffect(() => {
-        // Trong môi trường thực tế, bạn sẽ gọi API thực sự
-        setTimeout(() => {
-            setAlarms([
-                {
-                    id: 1,
-                    name: 'Nhiệt độ cao',
-                    device: 'Cảm biến nhiệt độ A1',
-                    condition: 'above',
-                    value: 30,
-                    unit: '°C',
-                    priority: 'high',
-                    status: 'triggered',
-                    lastTriggered: '2025-06-08T14:30:00',
-                    enabled: true
-                },
-                {
-                    id: 2,
-                    name: 'Độ ẩm thấp',
-                    device: 'Cảm biến độ ẩm B2',
-                    condition: 'below',
-                    value: 40,
-                    unit: '%',
-                    priority: 'medium',
-                    status: 'normal',
-                    lastTriggered: '2025-06-07T09:12:00',
-                    enabled: true
-                },
-                {
-                    id: 3,
-                    name: 'Ánh sáng yếu',
-                    device: 'Cảm biến ánh sáng C3',
-                    condition: 'below',
-                    value: 500,
-                    unit: 'lux',
-                    priority: 'low',
-                    status: 'normal',
-                    lastTriggered: null,
-                    enabled: false
-                },
-                {
-                    id: 4,
-                    name: 'Điện áp cao',
-                    device: 'Sensor điện D4',
-                    condition: 'above',
-                    value: 240,
-                    unit: 'V',
-                    priority: 'critical',
-                    status: 'triggered',
-                    lastTriggered: '2025-06-09T08:45:00',
-                    enabled: true
-                },
-                {
-                    id: 5,
-                    name: 'Mất kết nối',
-                    device: 'Gateway E5',
-                    condition: 'equals',
-                    value: 'disconnected',
-                    unit: '',
-                    priority: 'high',
-                    status: 'normal',
-                    lastTriggered: '2025-06-05T18:22:00',
-                    enabled: true
-                }
-            ]);
-            setIsLoading(false);
-        }, 800);
+        loadSensorData();
+        const interval = setInterval(loadSensorData, 10000); // Refresh mỗi 10s
+        return () => clearInterval(interval);
     }, []);
+
+    const loadSensorData = async () => {
+        try {
+            const response = await fetchSensorData();
+            if (response.data && response.data.length > 0) {
+                const latest = response.data[0];
+                setSensorData(latest);
+                
+                // Generate alarms based on real sensor data
+                const generatedAlarms = [];
+                
+                // Temperature alarm
+                if (latest.temperature > 30) {
+                    generatedAlarms.push({
+                        id: 1,
+                        name: 'Nhiệt độ cao',
+                        device: 'Cảm biến độ ẩm Phan Thiết',
+                        condition: 'above',
+                        value: 30,
+                        currentValue: latest.temperature,
+                        unit: '°C',
+                        priority: 'high',
+                        status: 'triggered',
+                        lastTriggered: latest.timestamp,
+                        enabled: true
+                    });
+                }
+                
+                // Humidity alarm
+                if (latest.humidity < 30) {
+                    generatedAlarms.push({
+                        id: 2,
+                        name: 'Độ ẩm thấp',
+                        device: 'Cảm biến độ ẩm Phan Thiết',
+                        condition: 'below',
+                        value: 30,
+                        currentValue: latest.humidity,
+                        unit: '%',
+                        priority: 'medium',
+                        status: 'triggered',
+                        lastTriggered: latest.timestamp,
+                        enabled: true
+                    });
+                } else if (latest.humidity > 80) {
+                    generatedAlarms.push({
+                        id: 3,
+                        name: 'Độ ẩm cao',
+                        device: 'Cảm biến độ ẩm Phan Thiết',
+                        condition: 'above',
+                        value: 80,
+                        currentValue: latest.humidity,
+                        unit: '%',
+                        priority: 'high',
+                        status: 'triggered',
+                        lastTriggered: latest.timestamp,
+                        enabled: true
+                    });
+                }
+                
+                // Light alarm
+                if (latest.light_value < 100) {
+                    generatedAlarms.push({
+                        id: 4,
+                        name: 'Ánh sáng yếu',
+                        device: 'Cảm biến độ ẩm Phan Thiết',
+                        condition: 'below',
+                        value: 100,
+                        currentValue: latest.light_value,
+                        unit: 'lux',
+                        priority: 'low',
+                        status: 'triggered',
+                        lastTriggered: latest.timestamp,
+                        enabled: true
+                    });
+                }
+                
+                // Battery alarm
+                const batteryData = await BatteryService.getBattery('hcm-device-01');
+                if (batteryData && batteryData.level !== undefined) {
+                    const calculatedBattery = BatteryService.calculateBatteryLevel(
+                        batteryData.timestamp, 
+                        batteryData.level
+                    );
+                    setBatteryLevel(calculatedBattery);
+                    
+                    if (calculatedBattery < 20) {
+                        generatedAlarms.push({
+                            id: 5,
+                            name: 'Pin yếu',
+                            device: 'Cảm biến độ ẩm Phan Thiết',
+                            condition: 'below',
+                            value: 20,
+                            currentValue: calculatedBattery,
+                            unit: '%',
+                            priority: 'critical',
+                            status: 'triggered',
+                            lastTriggered: new Date().toISOString(),
+                            enabled: true
+                        });
+                    }
+                }
+                
+                setAlarms(generatedAlarms);
+            }
+        } catch (error) {
+            console.error('Error loading sensor data:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     // Các hàm xử lý
     const handleTabChange = (tab) => {
@@ -368,6 +419,11 @@ const Alarms = () => {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm text-gray-700 dark:text-gray-300">
                                                 {renderCondition(alarm.condition, alarm.value, alarm.unit)}
+                                                {alarm.currentValue !== undefined && (
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                        Hiện tại: <span className="font-semibold text-red-600 dark:text-red-400">{alarm.currentValue}{alarm.unit}</span>
+                                                    </div>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">

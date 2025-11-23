@@ -25,6 +25,7 @@ function App() {
 
         {/* Sử dụng MainLayout làm layout chung cho các trang bên trong */}
         <Route path="/mainlayout" element={<MainLayout />}>
+          <Route index element={<HomePage />} /> {/* Default route */}
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="home" element={<HomePage />} />
           <Route path="alarms" element={<AlarmsPage />} />

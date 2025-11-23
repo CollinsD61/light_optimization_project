@@ -1,6 +1,7 @@
 // src/pages/DebugData.jsx
 import { useEffect, useState } from 'react';
 import { fetchSensorData } from '../api';
+import { BatteryService } from '../services/batteryService';
 
 const DebugData = () => {
     const [rawData, setRawData] = useState([]);
@@ -9,12 +10,23 @@ const DebugData = () => {
     const [filter, setFilter] = useState('all'); // all, light, temperature, humidity
     const [limit, setLimit] = useState(50);
     const [searchTerm, setSearchTerm] = useState('');
+    const [batteryLevel, setBatteryLevel] = useState(100);
 
     const loadData = async () => {
         setIsLoading(true);
         try {
             const response = await fetchSensorData();
             setRawData(response.data);
+            
+            // Fetch battery level từ Firebase
+            const batteryData = await BatteryService.getBattery('hcm-device-01');
+            if (batteryData && batteryData.level !== undefined) {
+                const calculatedBattery = BatteryService.calculateBatteryLevel(
+                    batteryData.timestamp, 
+                    batteryData.level
+                );
+                setBatteryLevel(calculatedBattery);
+            }
         } catch (error) {
             console.error('Lỗi khi tải dữ liệu:', error);
         } finally {
@@ -240,13 +252,14 @@ const DebugData = () => {
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Ánh sáng</th>
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Nhiệt độ</th>
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Độ ẩm</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Pin</th>
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Trạng thái</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-700/30">
                             {filteredData.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-12 text-center">
+                                    <td colSpan="7" className="px-6 py-12 text-center">
                                         <div className="flex flex-col items-center justify-center">
                                             <svg className="w-16 h-16 text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
@@ -302,6 +315,27 @@ const DebugData = () => {
                                                 ) : (
                                                     <span className="text-gray-500">-</span>
                                                 )}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-20 bg-gray-700 h-2 rounded-full overflow-hidden">
+                                                        <div 
+                                                            className={`h-full transition-all ${
+                                                                batteryLevel > 50 ? 'bg-green-500' : 
+                                                                batteryLevel > 20 ? 'bg-yellow-500' : 
+                                                                'bg-red-500'
+                                                            }`}
+                                                            style={{ width: `${batteryLevel}%` }}
+                                                        ></div>
+                                                    </div>
+                                                    <span className={`font-bold ${
+                                                        batteryLevel > 50 ? 'text-green-400' : 
+                                                        batteryLevel > 20 ? 'text-yellow-400' : 
+                                                        'text-red-400'
+                                                    }`}>
+                                                        {batteryLevel}%
+                                                    </span>
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex gap-1">

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { fetchSensorData } from '../api';
+import { BatteryService } from '../services/batteryService';
 
 const Home = () => {
     // Dark mode
@@ -15,6 +17,11 @@ const Home = () => {
     });
     const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
 
+    // Real sensor data
+    const [sensorData, setSensorData] = useState(null);
+    const [batteryLevel, setBatteryLevel] = useState(100);
+    const [loading, setLoading] = useState(true);
+
     useEffect(() => {
         if (darkMode) {
             document.documentElement.classList.add('dark');
@@ -28,6 +35,36 @@ const Home = () => {
         localStorage.setItem('language', language);
         // Có thể gắn i18n ở đây nếu có
     }, [language]);
+
+    useEffect(() => {
+        loadData();
+        const interval = setInterval(loadData, 10000); // Refresh mỗi 10s
+        return () => clearInterval(interval);
+    }, []);
+
+    const loadData = async () => {
+        try {
+            const response = await fetchSensorData();
+            if (response.data && response.data.length > 0) {
+                const latest = response.data[0];
+                setSensorData(latest);
+            }
+
+            // Fetch battery
+            const batteryData = await BatteryService.getBattery('hcm-device-01');
+            if (batteryData && batteryData.level !== undefined) {
+                const calculatedBattery = BatteryService.calculateBatteryLevel(
+                    batteryData.timestamp, 
+                    batteryData.level
+                );
+                setBatteryLevel(calculatedBattery);
+            }
+        } catch (error) {
+            console.error('Error loading data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const toggleDarkMode = () => setDarkMode(prev => !prev);
     const changeLanguage = (lang) => {
@@ -43,14 +80,42 @@ const Home = () => {
     ];
     const currentLanguage = languages.find(lang => lang.code === language) || languages[0];
 
-    // Dữ liệu mẫu
-    const devicesOnline = 5;
-    const devicesTotal = 8;
-    const warnings = [
-        { label: "Nhiệt độ cao", time: "1 giờ trước", type: "danger" },
-        { label: "Ánh sáng yếu", time: "3 giờ trước", type: "normal" },
-        { label: "Độ ẩm thấp", time: "12 giờ trước", type: "normal" }
-    ];
+    // Dữ liệu thực từ sensor
+    const devicesOnline = sensorData ? 1 : 0;
+    const devicesTotal = 1;
+    
+    // Tạo warnings dựa trên sensor data thực
+    const warnings = [];
+    if (sensorData) {
+        if (sensorData.temperature > 30) {
+            warnings.push({ 
+                label: `Nhiệt độ cao: ${sensorData.temperature}°C`, 
+                time: new Date(sensorData.timestamp).toLocaleString('vi-VN'), 
+                type: "danger" 
+            });
+        }
+        if (sensorData.light_value < 100) {
+            warnings.push({ 
+                label: `Ánh sáng yếu: ${sensorData.light_value} lux`, 
+                time: new Date(sensorData.timestamp).toLocaleString('vi-VN'), 
+                type: "normal" 
+            });
+        }
+        if (sensorData.humidity < 30 || sensorData.humidity > 80) {
+            warnings.push({ 
+                label: `Độ ẩm ${sensorData.humidity < 30 ? 'thấp' : 'cao'}: ${sensorData.humidity}%`, 
+                time: new Date(sensorData.timestamp).toLocaleString('vi-VN'), 
+                type: sensorData.humidity > 80 ? "danger" : "normal" 
+            });
+        }
+        if (batteryLevel < 20) {
+            warnings.push({ 
+                label: `Pin yếu: ${batteryLevel}%`, 
+                time: "Hiện tại", 
+                type: "danger" 
+            });
+        }
+    }
 
     return (
         <div className="p-6 transition-colors duration-200 bg-gray-50 dark:bg-gray-900 min-h-screen">
@@ -180,21 +245,35 @@ const Home = () => {
                     </div>
                 </div>
 
-                {/* Hoạt động */}
+                {/* Pin */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 transition-all duration-200 hover:shadow-lg border-l-4 border-green-500">
                     <div className="flex items-center">
                         <div className="bg-green-100 dark:bg-green-900 p-3 rounded-full">
                             <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5h12a2 2 0 012 2v10a2 2 0 01-2 2H3a2 2 0 01-2-2V7a2 2 0 012-2z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11h3a2 2 0 012 2v2a2 2 0 01-2 2h-3" />
                             </svg>
                         </div>
                         <div className="ml-4">
-                            <h2 className="text-sm font-medium text-gray-600 dark:text-gray-300">Hoạt động</h2>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">30</p>
+                            <h2 className="text-sm font-medium text-gray-600 dark:text-gray-300">Pin thiết bị</h2>
+                            <p className={`text-2xl font-bold ${
+                                batteryLevel > 50 ? 'text-green-600 dark:text-green-400' : 
+                                batteryLevel > 20 ? 'text-yellow-600 dark:text-yellow-400' : 
+                                'text-red-600 dark:text-red-400'
+                            }`}>{batteryLevel}%</p>
                         </div>
                     </div>
                     <div className="mt-3">
-                        <span className="text-sm text-gray-600 dark:text-gray-300">30 ngày qua</span>
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                            <div 
+                                className={`h-2 rounded-full transition-all ${
+                                    batteryLevel > 50 ? 'bg-green-500' : 
+                                    batteryLevel > 20 ? 'bg-yellow-500' : 
+                                    'bg-red-500'
+                                }`}
+                                style={{ width: `${batteryLevel}%` }}
+                            ></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -260,19 +339,62 @@ const Home = () => {
                         Xem cảnh báo
                     </button>
                 </div>
-                {/* Bảng điều khiển */}
+                {/* Sensor Data Realtime */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 transition-all duration-200 hover:shadow-lg">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
                             <svg className="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                             </svg>
-                            Bảng điều khiển
+                            Dữ liệu cảm biến
                         </h2>
+                        <span className={`text-xs px-2 py-1 rounded-full ${loading ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'}`}>
+                            {loading ? 'Đang tải...' : 'Trực tuyến'}
+                        </span>
                     </div>
-                    <div className="mt-3">
-                        <span className="text-sm text-gray-600 dark:text-gray-300">Bảng điều khiển mặc định</span>
-                    </div>
+                    {sensorData ? (
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-center p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                                <span className="text-sm text-gray-700 dark:text-gray-300 flex items-center">
+                                    <svg className="w-4 h-4 mr-2 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd" />
+                                    </svg>
+                                    Nhiệt độ
+                                </span>
+                                <span className="font-bold text-red-600 dark:text-red-400">{sensorData.temperature}°C</span>
+                            </div>
+                            <div className="flex justify-between items-center p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                <span className="text-sm text-gray-700 dark:text-gray-300 flex items-center">
+                                    <svg className="w-4 h-4 mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clipRule="evenodd" />
+                                    </svg>
+                                    Độ ẩm
+                                </span>
+                                <span className="font-bold text-blue-600 dark:text-blue-400">{sensorData.humidity}%</span>
+                            </div>
+                            <div className="flex justify-between items-center p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                                <span className="text-sm text-gray-700 dark:text-gray-300 flex items-center">
+                                    <svg className="w-4 h-4 mr-2 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" />
+                                    </svg>
+                                    Ánh sáng
+                                </span>
+                                <span className="font-bold text-yellow-600 dark:text-yellow-400">{sensorData.light_value} lux</span>
+                            </div>
+                            <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                    Cập nhật: {new Date(sensorData.timestamp).toLocaleString('vi-VN')}
+                                </span>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                            <svg className="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                            </svg>
+                            Không có dữ liệu cảm biến
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

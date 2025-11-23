@@ -117,12 +117,36 @@ const receiveSensorData = async (req, res, next) => {
     console.log('ReceiveSensorDataAPI được gọi.');
     console.log('Request data:', req.body);
 
-    const { sensor_name, light_value, temperature, humidity, timestamp } = req.body;
+    const { sensor_name, light_value, temperature, humidity, timestamp, test_mode } = req.body;
 
     if (!sensor_name) {
       return res.status(400).json({ error: 'sensor_name is required' });
     }
 
+    // TEST MODE: Nếu test_mode = true, KHÔNG ghi vào database
+    if (test_mode === true || test_mode === 'true') {
+      console.log('🧪 TEST MODE: Data được nhận nhưng KHÔNG ghi vào database');
+      
+      // Validate data format
+      const mockData = {
+        id: 'test-' + Date.now(),
+        sensorId: 'test-sensor-id',
+        sensor_name: sensor_name,
+        lightValue: light_value || null,
+        temperature: temperature || null,
+        humidity: humidity || null,
+        timestamp: timestamp || new Date(),
+        test_mode: true
+      };
+
+      return res.status(201).json({ 
+        message: 'TEST MODE: Dữ liệu đã được nhận nhưng KHÔNG ghi vào database.',
+        test_mode: true,
+        data: mockData
+      });
+    }
+
+    // NORMAL MODE: Ghi vào database như bình thường
     // Find or create sensor
     let sensor = await db.Sensor.findOne({ where: { name: sensor_name } });
     
@@ -147,6 +171,7 @@ const receiveSensorData = async (req, res, next) => {
 
     res.status(201).json({ 
       message: 'Dữ liệu đã được ghi thành công.',
+      test_mode: false,
       data: sensorData
     });
   } catch (error) {

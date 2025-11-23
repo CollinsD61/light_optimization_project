@@ -85,7 +85,7 @@ test.describe('API Tests', {
     expect(response.status()).toBe(401);
   });
 
-  test('TC036 - Send sensor data to IoT endpoint', async ({ request }) => {
+  test('TC036 - Send sensor data to IoT endpoint (TEST MODE)', async ({ request }) => {
     const response = await request.post(`${BASE_URL}/api/receive-data`, {
       headers: getDefaultHeaders(),
       data: {
@@ -93,13 +93,38 @@ test.describe('API Tests', {
         light_value: 500,
         temperature: 25.5,
         humidity: 60,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        test_mode: true  // Không ghi vào database
       }
     });
     
     expect(response.status()).toBe(201);
     const data = await response.json();
     expect(data).toHaveProperty('message');
+    expect(data.test_mode).toBe(true);
+    expect(data.data).toHaveProperty('sensor_name', 'test-sensor-playwright');
+    console.log('✅ TEST MODE: Data received but NOT saved to database');
+  });
+
+  test('TC036.1 - Send sensor data to IoT endpoint (NORMAL MODE - Real Write)', async ({ request }) => {
+    const response = await request.post(`${BASE_URL}/api/receive-data`, {
+      headers: getDefaultHeaders(),
+      data: {
+        sensor_name: 'real-sensor-playwright',
+        light_value: 750,
+        temperature: 28.0,
+        humidity: 65,
+        timestamp: new Date().toISOString(),
+        test_mode: false  // Ghi vào database
+      }
+    });
+    
+    expect(response.status()).toBe(201);
+    const data = await response.json();
+    expect(data).toHaveProperty('message');
+    expect(data.test_mode).toBe(false);
+    expect(data.data).toHaveProperty('id');
+    console.log('✅ NORMAL MODE: Data saved to database with ID:', data.data.id);
   });
 
   test('TC037 - Get sensors list with authentication', async ({ request }) => {

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Switch } from '@headlessui/react';
+import { BASE_URL } from '../api';
 
 const Settings = () => {
     // Lấy darkMode từ localStorage
@@ -10,11 +11,30 @@ const Settings = () => {
 
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
     const [emailAlerts, setEmailAlerts] = useState(false);
-    const [dataRefreshInterval, setDataRefreshInterval] = useState('5');
+    const [dataRefreshInterval, setDataRefreshInterval] = useState('10');
     const [temperatureUnit, setTemperatureUnit] = useState('celsius');
     const [apiKey, setApiKey] = useState('');
-    const [endpoint, setEndpoint] = useState('https://api.yourserver.com/v1/');
+    const [endpoint, setEndpoint] = useState(BASE_URL);
     const [savedSettings, setSavedSettings] = useState(false);
+    const [userEmail, setUserEmail] = useState('');
+
+    useEffect(() => {
+        // Load user email from localStorage
+        const email = localStorage.getItem('user_email');
+        if (email) {
+            setUserEmail(email);
+        }
+
+        // Load saved settings
+        const savedSettingsData = localStorage.getItem('settings');
+        if (savedSettingsData) {
+            const settings = JSON.parse(savedSettingsData);
+            setNotificationsEnabled(settings.notificationsEnabled ?? true);
+            setEmailAlerts(settings.emailAlerts ?? false);
+            setDataRefreshInterval(settings.dataRefreshInterval ?? '10');
+            setTemperatureUnit(settings.temperatureUnit ?? 'celsius');
+        }
+    }, []);
 
     // Toggle dark mode
     const handleDarkModeToggle = () => {
@@ -257,15 +277,19 @@ const Settings = () => {
                         <div className="space-y-2">
                             <div className="flex justify-between">
                                 <span className="text-sm text-gray-600 dark:text-gray-400">Phiên bản</span>
-                                <span className="text-sm font-medium text-gray-900 dark:text-white">v1.2.5</span>
+                                <span className="text-sm font-medium text-gray-900 dark:text-white">v1.0.0</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-sm text-gray-600 dark:text-gray-400">Lần cập nhật cuối</span>
-                                <span className="text-sm font-medium text-gray-900 dark:text-white">04/06/2025</span>
+                                <span className="text-sm font-medium text-gray-900 dark:text-white">{new Date().toLocaleDateString('vi-VN')}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-sm text-gray-600 dark:text-gray-400">Thiết bị kết nối</span>
-                                <span className="text-sm font-medium text-gray-900 dark:text-white">15</span>
+                                <span className="text-sm font-medium text-gray-900 dark:text-white">1</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-sm text-gray-600 dark:text-gray-400">Email</span>
+                                <span className="text-sm font-medium text-gray-900 dark:text-white">{userEmail || 'N/A'}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-sm text-gray-600 dark:text-gray-400">Trạng thái</span>
