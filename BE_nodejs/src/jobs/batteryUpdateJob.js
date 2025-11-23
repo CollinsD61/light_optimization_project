@@ -1,23 +1,7 @@
 const cron = require('node-cron');
 const BatteryService = require('../services/batteryService');
 
-/**
- * BATTERY UPDATE CRON JOB
- * 
- * Runs every 5 minutes to automatically update battery decay
- * 
- * Cron syntax: */5 * * * * = Every 5 minutes
- * - Minute: */5 (every 5 minutes)
- * - Hour: * (every hour)
- * - Day of Month: * (every day)
- * - Month: * (every month)
- * - Day of Week: * (every day of week)
- */
-
-// Configuration: Run every 5 minutes
-const CRON_SCHEDULE = '*/5 * * * *'; // Every 5 minutes
-// const CRON_SCHEDULE = '*/1 * * * *'; // Every 1 minute (for testing)
-// const CRON_SCHEDULE = '0 * * * *'; // Every hour
+const CRON_SCHEDULE = '*/5 * * * *';
 
 let cronJob = null;
 
