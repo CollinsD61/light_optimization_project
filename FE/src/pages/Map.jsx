@@ -4,10 +4,9 @@ import { EditControl } from 'react-leaflet-draw';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
 import L from 'leaflet';
-import { fetchSensorData } from '../api';
+import { fetchSensorDataWithBattery } from '../api';
 import { ChevronDown, Search, Filter, RefreshCw, PlusCircle, MapPin, AlertTriangle, CheckCircle, Layers } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { BatteryService } from '../services/batteryService';
 
 // Fix for default marker icons with Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -322,146 +321,64 @@ const SensorMap = () => {
   const loadSensorData = async () => {
     setIsLoading(true);
     try {
-      const response = await fetchSensorData();
-      const data = response.data;
+      console.log('[Frontend] Fetching sensor data with battery from Backend API...');
+      
+      // ✅ GỌI API BACKEND - Backend trả cả sensor data + battery level
+      const response = await fetchSensorDataWithBattery();
+      const { data, battery } = response.data;
       
       if (data && data.length > 0) {
         const sortedData = data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         const latest = sortedData[0];
         
-        // 💀 CHECK SENSOR ALIVE - Option 2: Check theo timestamp của data cuối cùng
-        const lastDataTime = new Date(latest.timestamp);
-        const minutesSinceData = (Date.now() - lastDataTime.getTime()) / (1000 * 60);
-        const BATTERY_TIMEOUT_MINUTES = 70;
+        // ✅ LẤY PIN TỪ BACKEND (Backend đã tính toán tất cả)
+        const batteryLevel = battery ? battery.level : 100;
         
-        console.log('=== SENSOR HEALTH CHECK (Option B) ===');
-        console.log('Last data timestamp:', lastDataTime.toISOString());
-        console.log('Minutes since last data:', minutesSinceData.toFixed(2));
-        console.log('Timeout threshold:', BATTERY_TIMEOUT_MINUTES, 'minutes');
+        console.log('[Frontend] Received from Backend:');
+        console.log('  - Latest data timestamp:', latest.timestamp);
+        console.log('  - Battery level:', batteryLevel + '%');
+        console.log('  - Battery last updated:', battery ? new Date(battery.lastUpdated).toISOString() : 'N/A');
         
-        let batteryLevel = 0;
-        
-        // Lấy battery level cuối cùng từ Firebase để tính decay chính xác
-        const batteryData = await BatteryService.getBattery('hcm-device-01');
-        const lastKnownBattery = batteryData ? batteryData.level : 100;
-        const lastBatteryTimestamp = batteryData ? batteryData.timestamp : latest.timestamp;
-        
-        console.log('Last known battery:', lastKnownBattery + '%');
-        console.log('Last battery update:', new Date(lastBatteryTimestamp).toISOString());
-        
-        // Tính pin tụt dần từ lúc có data cuối tới giờ (cho dù sensor sống hay chết)
-        const calculatedBattery = BatteryService.calculateBatteryLevel(
-          lastBatteryTimestamp,
-          lastKnownBattery
-        );
-        
-        console.log('Calculated battery after decay:', calculatedBattery + '%');
-        
-        // Nếu sensor CHẾT (quá 70 phút không có data)
-        if (minutesSinceData > BATTERY_TIMEOUT_MINUTES) {
-          console.warn(`💀 Sensor CHẾT: Quá ${BATTERY_TIMEOUT_MINUTES} phút không có data!`);
-          console.warn(`   Time since last data: ${minutesSinceData.toFixed(2)} minutes`);
-          console.warn(`   Battery decay: ${lastKnownBattery}% → ${calculatedBattery}%`);
-          
-          // Hiển thị pin đã tụt (không force = 0%)
-          batteryLevel = Math.max(0, calculatedBattery);
-          
-          // Update Firebase để lưu trạng thái
-          await BatteryService.updateBattery('hcm-device-01', batteryLevel);
-          
-          console.log(`⚠️ Sensor timeout, battery shown as ${batteryLevel}% (decayed naturally)`);
-        } else {
-          // ✅ Sensor còn sống, xử lý bình thường
-          console.log('✅ Sensor SỐNG: Vẫn còn gửi data');
-          
-          // Xử lý tín hiệu mới từ sensor (auto reset pin nếu cần)
-          console.log('📡 New sensor data received, handling signal...');
-          const signalResult = await BatteryService.handleNewSignal('hcm-device-01');
-          console.log('Battery after signal handling:', signalResult);
-          
-          batteryLevel = signalResult || 100; // Use signal result or default
-          
-          // Nếu pin không phải 100% (không phải mới reset), tính toán decay
-          if (signalResult !== 100 && signalResult !== null) {
-            // 🔒 RACE CONDITION FIX: Đợi 500ms để Firebase sync xong
-            console.log('⏳ Waiting 500ms for Firebase to sync...');
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            // 🔍 Đọc lại battery data sau khi đã sync
-            const batteryData = await BatteryService.getBattery('hcm-device-01');
-            
-            if (batteryData && batteryData.level !== undefined) {
-              // ✅ VERIFICATION: Check xem có lấy đúng giá trị không
-              const lastUpdatedTime = new Date(batteryData.lastUpdated || batteryData.timestamp);
-              const timeSinceUpdate = Date.now() - lastUpdatedTime.getTime();
-              
-              console.log('🔍 Battery verification:');
-              console.log('  - Battery level:', batteryData.level + '%');
-              console.log('  - Last updated:', lastUpdatedTime.toISOString());
-              console.log('  - Time since update:', timeSinceUpdate + 'ms');
-              console.log('  - Expected from signal:', signalResult + '%');
-              
-              // ⚠️ WARNING: Nếu giá trị khác quá nhiều so với signal result
-              if (Math.abs(batteryData.level - signalResult) > 5) {
-                console.warn('⚠️ WARNING: Battery mismatch detected!');
-                console.warn('  - Signal result:', signalResult + '%');
-                console.warn('  - Firebase value:', batteryData.level + '%');
-                console.warn('  - Difference:', Math.abs(batteryData.level - signalResult) + '%');
-                console.warn('  → Using signal result to avoid stale data');
-                batteryLevel = signalResult;
-              } else {
-                // ✅ Giá trị đồng bộ OK, tính toán decay
-                const calculatedBattery = BatteryService.calculateBatteryLevel(
-                  batteryData.timestamp, 
-                  batteryData.level
-                );
-                
-                console.log('Original battery:', batteryData.level);
-                console.log('Calculated battery after time:', calculatedBattery);
-                
-                // Nếu pin đã thay đổi đáng kể (>= 1%), cập nhật lên Firebase
-                if (Math.abs(calculatedBattery - batteryData.level) >= 1) {
-                  console.log(`Battery changed from ${batteryData.level}% to ${calculatedBattery}%`);
-                  await BatteryService.updateBattery('hcm-device-01', calculatedBattery);
-                  batteryLevel = calculatedBattery;
-                } else {
-                  console.log('Battery change too small, keeping original value');
-                  batteryLevel = batteryData.level;
-                }
-              }
-            }
-          }
-        } // End of sensor alive check
-        
+        // ✅ TẠO SENSOR OBJECT ĐỂ HIỂN THỊ
         const sensorData = {
-            id: 'hcm-device-01',
-            sensor_id: 'hcm-device-01',
-            name: 'Cảm biến độ ẩm Phan Thiết',
-            lat: 10.9287,
-            lng: 108.1022,
-            type: 'humidity',
-            deviceType: 'humidity',
-            location: 'Phan Thiết, Bình Thuận',
-            timestamp: latest.timestamp,
-            light: latest.light_value || 0,
-            temperature: latest.temperature || 0,
-            humidity: latest.humidity || 0,
-            battery: batteryLevel, // Sử dụng pin đã tính toán
-            batteryLastUpdated: new Date().toISOString(),
-            isLive: true
-          };
-          
-          setSensors([sensorData]);
+          id: 'hcm-device-01',
+          sensor_id: 'hcm-device-01',
+          name: 'Cảm biến độ ẩm Phan Thiết',
+          lat: 10.9287,
+          lng: 108.1022,
+          type: 'humidity',
+          deviceType: 'humidity',
+          location: 'Phan Thiết, Bình Thuận',
+          timestamp: latest.timestamp,
+          light: latest.light_value || 0,
+          temperature: latest.temperature || 0,
+          humidity: latest.humidity || 0,
+          battery: batteryLevel, // ✅ Sử dụng battery từ Backend
+          batteryLastUpdated: battery ? battery.timestamp : new Date().toISOString(),
+          isLive: true
+        };
+        
+        setSensors([sensorData]);
+        console.log('[Frontend] ✅ Sensor data displayed successfully');
       }
     } catch (error) {
-      console.error('Error loading sensor data:', error);
+      console.error('[Frontend] Error loading sensor data:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Hàm cập nhật pin
+  // ❌ XÓA: Hàm cập nhật pin (Backend tự động cập nhật mỗi 5 phút)
+  // Frontend không cần tính toán pin nữa, chỉ gọi API để lấy data
   const updateSensorsBattery = async (sensorList = sensors) => {
+    // ❌ DEPRECATED: Function này không còn cần thiết
+    // Backend cron job tự động cập nhật pin mỗi 5 phút
+    // Frontend chỉ cần reload data từ API
+    console.log('[Frontend] updateSensorsBattery is deprecated, reloading from API instead');
+    await loadSensorData();
+    return;
+    
+    /* LEGACY CODE - KHÔNG DÙNG NỮA
     try {
       console.log('Manual battery update triggered');
       for (const sensor of sensorList) {

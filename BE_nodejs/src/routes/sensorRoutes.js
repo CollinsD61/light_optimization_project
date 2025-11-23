@@ -21,6 +21,9 @@ router.put('/sensor-data/:id', authenticateToken, sensorDataController.updateSen
 router.patch('/sensor-data/:id', authenticateToken, sensorDataController.updateSensorData);
 router.delete('/sensor-data/:id', authenticateToken, sensorDataController.deleteSensorData);
 
+// NEW: Get sensor data with battery level (Frontend chỉ gọi endpoint này)
+router.get('/sensor-data-with-battery', authenticateToken, sensorDataController.getSensorDataWithBattery);
+
 // Public endpoint for IoT devices to send data (with rate limiting)
 router.post('/receive-data', iotLimiter, sensorDataController.receiveSensorData);
 

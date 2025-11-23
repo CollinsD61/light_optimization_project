@@ -1,6 +1,7 @@
 const db = require('../models');
 const { Op } = require('sequelize');
 const BatteryService = require('../services/batteryService');
+const database = require('../config/firebase');
 
 // Get all sensor data with pagination and filtering
 const getSensorData = async (req, res, next) => {
@@ -229,12 +230,87 @@ const deleteSensorData = async (req, res, next) => {
   }
 };
 
+// NEW: Get sensor data WITH battery level from Firebase
+const getSensorDataWithBattery = async (req, res, next) => {
+  try {
+    // 1. Lấy sensor data từ database
+    const response = await fetchSensorData();
+    const sensorData = response.data;
+    
+    if (!sensorData || sensorData.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+        battery: null,
+        message: 'No sensor data found'
+      });
+    }
+    
+    // 2. Lấy battery level từ Firebase (Backend tự động cập nhật mỗi 5 phút)
+    const sensorId = 'hcm-device-01'; // Hardcoded for now
+    const batteryRef = database.ref(`sensors/${sensorId}/battery`);
+    const snapshot = await batteryRef.once('value');
+    const batteryData = snapshot.val();
+    
+    const batteryLevel = batteryData ? batteryData.level : 100;
+    
+    console.log(`[API] Returning sensor data with battery: ${batteryLevel}%`);
+    
+    // 3. Trả về cho frontend
+    return res.status(200).json({
+      success: true,
+      data: sensorData,
+      battery: {
+        level: batteryLevel,
+        lastUpdated: batteryData ? batteryData.lastUpdated : Date.now(),
+        timestamp: batteryData ? batteryData.timestamp : new Date().toISOString()
+      },
+      message: 'Data fetched successfully'
+    });
+    
+  } catch (error) {
+    console.error('[API] Error getting sensor data with battery:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
+// Helper function to fetch sensor data (reuse existing logic)
+const fetchSensorData = async () => {
+  const { count, rows } = await db.SensorData.findAndCountAll({
+    limit: 10000,
+    offset: 0,
+    order: [['timestamp', 'DESC']],
+    include: [{
+      model: db.Sensor,
+      as: 'sensor',
+      attributes: ['id', 'name', 'location']
+    }]
+  });
+  
+  const data = rows.map(row => ({
+    id: row.id,
+    sensor_name: row.sensor ? row.sensor.name : 'Unknown',
+    light_value: row.lightValue,
+    temperature: row.temperature,
+    humidity: row.humidity,
+    timestamp: row.timestamp,
+    location: row.sensor ? row.sensor.location : null
+  }));
+  
+  return { count, data };
+};
+
 module.exports = {
   getSensorData,
   getSingleSensorData,
   createSensorData,
   receiveSensorData,
   updateSensorData,
-  deleteSensorData
+  deleteSensorData,
+  getSensorDataWithBattery  // NEW endpoint
 };
 

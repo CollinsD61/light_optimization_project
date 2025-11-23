@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
-import { fetchSensorData } from '../api';
-import { BatteryService } from '../services/batteryService';
+import { fetchSensorDataWithBattery } from '../api';
 
 const Alarms = () => {
     const [alarms, setAlarms] = useState([]);
@@ -30,9 +29,12 @@ const Alarms = () => {
 
     const loadSensorData = async () => {
         try {
-            const response = await fetchSensorData();
-            if (response.data && response.data.length > 0) {
-                const latest = response.data[0];
+            // ✅ GỌI API MỚI: Backend trả cả sensor data + battery
+            const response = await fetchSensorDataWithBattery();
+            const { data, battery } = response.data;
+            
+            if (data && data.length > 0) {
+                const latest = data[0];
                 setSensorData(latest);
                 
                 // Generate alarms based on real sensor data
@@ -103,23 +105,19 @@ const Alarms = () => {
                     });
                 }
                 
-                // Battery alarm
-                const batteryData = await BatteryService.getBattery('hcm-device-01');
-                if (batteryData && batteryData.level !== undefined) {
-                    const calculatedBattery = BatteryService.calculateBatteryLevel(
-                        batteryData.timestamp, 
-                        batteryData.level
-                    );
-                    setBatteryLevel(calculatedBattery);
+                // ✅ Battery alarm - LẤY TỪ BACKEND (đã tính toán sẵn)
+                if (battery && battery.level !== undefined) {
+                    const currentBattery = battery.level;
+                    setBatteryLevel(currentBattery);
                     
-                    if (calculatedBattery < 20) {
+                    if (currentBattery < 20) {
                         generatedAlarms.push({
                             id: 5,
                             name: 'Pin yếu',
                             device: 'Cảm biến độ ẩm Phan Thiết',
                             condition: 'below',
                             value: 20,
-                            currentValue: calculatedBattery,
+                            currentValue: currentBattery,
                             unit: '%',
                             priority: 'critical',
                             status: 'triggered',

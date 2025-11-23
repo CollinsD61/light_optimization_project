@@ -154,8 +154,18 @@ export const googleLogin = async (credential) => {
 
 // Fetch sensor data (có Bearer token)
 export const fetchSensorData = () => {
-    const token = localStorage.getItem('access_token'); // Lấy access token từ localStorage
+    const token = localStorage.getItem('access_token');
     return axios.get(`${BASE_URL}/api/sensor-data/`, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+};
+
+// NEW: Fetch sensor data WITH battery level (Backend trả cả data + battery)
+export const fetchSensorDataWithBattery = () => {
+    const token = localStorage.getItem('access_token');
+    return axios.get(`${BASE_URL}/api/sensor-data-with-battery`, {
         headers: {
             Authorization: `Bearer ${token}`,
         },

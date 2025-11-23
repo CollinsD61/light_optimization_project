@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchSensorData } from '../api';
-import { BatteryService } from '../services/batteryService';
+import { fetchSensorDataWithBattery } from '../api';
 
 const Home = () => {
     // Dark mode
@@ -44,20 +43,18 @@ const Home = () => {
 
     const loadData = async () => {
         try {
-            const response = await fetchSensorData();
-            if (response.data && response.data.length > 0) {
-                const latest = response.data[0];
+            // ✅ GỌI API MỚI: Backend trả cả sensor data + battery
+            const response = await fetchSensorDataWithBattery();
+            const { data, battery } = response.data;
+            
+            if (data && data.length > 0) {
+                const latest = data[0];
                 setSensorData(latest);
             }
 
-            // Fetch battery
-            const batteryData = await BatteryService.getBattery('hcm-device-01');
-            if (batteryData && batteryData.level !== undefined) {
-                const calculatedBattery = BatteryService.calculateBatteryLevel(
-                    batteryData.timestamp, 
-                    batteryData.level
-                );
-                setBatteryLevel(calculatedBattery);
+            // ✅ LẤY BATTERY TỪ BACKEND (đã tính toán sẵn)
+            if (battery && battery.level !== undefined) {
+                setBatteryLevel(battery.level);
             }
         } catch (error) {
             console.error('Error loading data:', error);

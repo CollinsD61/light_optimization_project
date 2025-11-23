@@ -1,7 +1,6 @@
 // src/pages/DebugData.jsx
 import { useEffect, useState } from 'react';
-import { fetchSensorData } from '../api';
-import { BatteryService } from '../services/batteryService';
+import { fetchSensorDataWithBattery } from '../api';
 
 const DebugData = () => {
     const [rawData, setRawData] = useState([]);
@@ -15,17 +14,15 @@ const DebugData = () => {
     const loadData = async () => {
         setIsLoading(true);
         try {
-            const response = await fetchSensorData();
-            setRawData(response.data);
+            // ✅ GỌI API MỚI: Backend trả cả sensor data + battery
+            const response = await fetchSensorDataWithBattery();
+            const { data, battery } = response.data;
             
-            // Fetch battery level từ Firebase
-            const batteryData = await BatteryService.getBattery('hcm-device-01');
-            if (batteryData && batteryData.level !== undefined) {
-                const calculatedBattery = BatteryService.calculateBatteryLevel(
-                    batteryData.timestamp, 
-                    batteryData.level
-                );
-                setBatteryLevel(calculatedBattery);
+            setRawData(data);
+            
+            // ✅ LẤY BATTERY TỪ BACKEND (đã tính toán sẵn)
+            if (battery && battery.level !== undefined) {
+                setBatteryLevel(battery.level);
             }
         } catch (error) {
             console.error('Lỗi khi tải dữ liệu:', error);
