@@ -233,11 +233,34 @@ const deleteSensorData = async (req, res, next) => {
 // NEW: Get sensor data WITH battery level from Firebase
 const getSensorDataWithBattery = async (req, res, next) => {
   try {
+    console.log('[API] /api/sensor-data-with-battery called');
+    
     // 1. Lấy sensor data từ database
-    const response = await fetchSensorData();
-    const sensorData = response.data;
+    const { count, rows } = await db.SensorData.findAndCountAll({
+      limit: 10000,
+      offset: 0,
+      order: [['timestamp', 'DESC']],
+      include: [{
+        model: db.Sensor,
+        as: 'sensor',
+        attributes: ['id', 'name', 'location']
+      }]
+    });
+    
+    const sensorData = rows.map(row => ({
+      id: row.id,
+      sensor_name: row.sensor ? row.sensor.name : 'Unknown',
+      light_value: row.lightValue,
+      temperature: row.temperature,
+      humidity: row.humidity,
+      timestamp: row.timestamp,
+      location: row.sensor ? row.sensor.location : null
+    }));
+    
+    console.log(`[API] Found ${count} sensor data records`);
     
     if (!sensorData || sensorData.length === 0) {
+      console.log('[API] No sensor data found, returning empty array');
       return res.status(200).json({
         success: true,
         data: [],
@@ -248,13 +271,26 @@ const getSensorDataWithBattery = async (req, res, next) => {
     
     // 2. Lấy battery level từ Firebase (Backend tự động cập nhật mỗi 5 phút)
     const sensorId = 'hcm-device-01'; // Hardcoded for now
-    const batteryRef = database.ref(`sensors/${sensorId}/battery`);
-    const snapshot = await batteryRef.once('value');
-    const batteryData = snapshot.val();
+    let batteryLevel = 100;
+    let batteryData = null;
     
-    const batteryLevel = batteryData ? batteryData.level : 100;
+    try {
+      const batteryRef = database.ref(`sensors/${sensorId}/battery`);
+      const snapshot = await batteryRef.once('value');
+      batteryData = snapshot.val();
+      
+      if (batteryData && batteryData.level !== undefined) {
+        batteryLevel = batteryData.level;
+        console.log(`[API] Retrieved battery level from Firebase: ${batteryLevel}%`);
+      } else {
+        console.log('[API] No battery data in Firebase, using default 100%');
+      }
+    } catch (firebaseError) {
+      console.warn('[API] Firebase error (using default battery 100%):', firebaseError.message);
+      // Continue with default battery level
+    }
     
-    console.log(`[API] Returning sensor data with battery: ${batteryLevel}%`);
+    console.log(`[API] Returning ${sensorData.length} records with battery: ${batteryLevel}%`);
     
     // 3. Trả về cho frontend
     return res.status(200).json({
@@ -270,38 +306,13 @@ const getSensorDataWithBattery = async (req, res, next) => {
     
   } catch (error) {
     console.error('[API] Error getting sensor data with battery:', error);
+    console.error('[API] Error stack:', error.stack);
     return res.status(500).json({
       success: false,
       message: 'Internal server error',
       error: error.message
     });
   }
-};
-
-// Helper function to fetch sensor data (reuse existing logic)
-const fetchSensorData = async () => {
-  const { count, rows } = await db.SensorData.findAndCountAll({
-    limit: 10000,
-    offset: 0,
-    order: [['timestamp', 'DESC']],
-    include: [{
-      model: db.Sensor,
-      as: 'sensor',
-      attributes: ['id', 'name', 'location']
-    }]
-  });
-  
-  const data = rows.map(row => ({
-    id: row.id,
-    sensor_name: row.sensor ? row.sensor.name : 'Unknown',
-    light_value: row.lightValue,
-    temperature: row.temperature,
-    humidity: row.humidity,
-    timestamp: row.timestamp,
-    location: row.sensor ? row.sensor.location : null
-  }));
-  
-  return { count, data };
 };
 
 module.exports = {

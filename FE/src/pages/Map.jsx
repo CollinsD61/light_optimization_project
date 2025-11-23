@@ -1133,7 +1133,7 @@ const forceSyncBattery = async () => {
       </div>
       
       {/* Custom styles */}
-      <style jsx>{`
+      <style>{`
         .leaflet-container {
           font-family: inherit;
           z-index: 0;
@@ -1193,14 +1193,14 @@ const forceSyncBattery = async () => {
           transform-origin: center bottom;
         }
         
-        :global(.leaflet-custom-controls) {
+        .leaflet-custom-controls {
           position: absolute;
           bottom: 95px;
           right: 10px;
           z-index: 1000;
         }
         
-        :global(.leaflet-custom-control-container) {
+        .leaflet-custom-control-container {
           background: rgba(31, 41, 55, 0.85);
           border-radius: 10px;
           backdrop-filter: blur(8px);
@@ -1210,7 +1210,7 @@ const forceSyncBattery = async () => {
           overflow: hidden;
         }
         
-        :global(.custom-map-button) {
+        .custom-map-button {
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1224,8 +1224,9 @@ const forceSyncBattery = async () => {
           transition: all 0.3s ease;
         }
         
-        :global(.custom-map-button:hover) {
-}
+        .custom-map-button:hover {
+          background-color: rgba(59, 130, 246, 0.4);
+        }
       `}</style>
     </div>
   );
