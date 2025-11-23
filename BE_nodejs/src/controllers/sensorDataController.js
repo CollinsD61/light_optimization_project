@@ -1,7 +1,7 @@
 const db = require('../models');
 const { Op } = require('sequelize');
 const BatteryService = require('../services/batteryService');
-const database = require('../config/firebase');
+const { database } = require('../config/firebase');
 
 // Get all sensor data with pagination and filtering
 const getSensorData = async (req, res, next) => {
@@ -248,7 +248,7 @@ const getSensorDataWithBattery = async (req, res, next) => {
     
     // 2. Lấy battery level từ Firebase (Backend tự động cập nhật mỗi 5 phút)
     const sensorId = 'hcm-device-01'; // Hardcoded for now
-    const batteryRef = database.ref().child(`sensors/${sensorId}/battery`);
+    const batteryRef = database.ref(`sensors/${sensorId}/battery`);
     const snapshot = await batteryRef.once('value');
     const batteryData = snapshot.val();
     
