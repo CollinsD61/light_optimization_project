@@ -203,4 +203,77 @@ export class BatteryService {
       return null;
     }
   }
+
+  // Verify battery data đã sync chưa
+  static async verifyBatterySync(sensorId, expectedValue, maxRetries = 3, delayMs = 500) {
+    console.log(`🔍 Verifying battery sync for ${sensorId}...`);
+    console.log(`   Expected value: ${expectedValue}%`);
+    
+    for (let i = 0; i < maxRetries; i++) {
+      // Đợi một chút để Firebase sync
+      if (i > 0) {
+        console.log(`   Retry ${i}/${maxRetries} after ${delayMs}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+      
+      // Đọc giá trị hiện tại
+      const batteryData = await this.getBattery(sensorId);
+      
+      if (batteryData && batteryData.level !== undefined) {
+        const difference = Math.abs(batteryData.level - expectedValue);
+        const lastUpdated = new Date(batteryData.lastUpdated || batteryData.timestamp);
+        const timeSinceUpdate = Date.now() - lastUpdated.getTime();
+        
+        console.log(`   Current value: ${batteryData.level}%`);
+        console.log(`   Difference: ${difference}%`);
+        console.log(`   Last updated: ${timeSinceUpdate}ms ago`);
+        
+        // Nếu giá trị đồng bộ (sai số < 1%)
+        if (difference <= 1) {
+          console.log(`   ✅ Battery synced successfully!`);
+          return {
+            success: true,
+            value: batteryData.level,
+            timestamp: batteryData.timestamp,
+            lastUpdated: batteryData.lastUpdated,
+            retries: i
+          };
+        }
+        
+        console.warn(`   ⚠️ Battery not synced yet (difference: ${difference}%)`);
+      }
+    }
+    
+    // Sau maxRetries lần vẫn không sync
+    console.error(`   ❌ Battery sync failed after ${maxRetries} retries!`);
+    return {
+      success: false,
+      value: expectedValue, // Fallback về expected value
+      retries: maxRetries
+    };
+  }
+
+  // Get battery với retry nếu có race condition
+  static async getBatteryWithRetry(sensorId, expectedValue = null, maxRetries = 2) {
+    const batteryData = await this.getBattery(sensorId);
+    
+    // Nếu không có expected value, return luôn
+    if (expectedValue === null || !batteryData) {
+      return batteryData;
+    }
+    
+    // Nếu có expected value, verify
+    const difference = Math.abs(batteryData.level - expectedValue);
+    
+    // Nếu khác quá nhiều (> 5%), có thể bị stale
+    if (difference > 5 && maxRetries > 0) {
+      console.warn(`⚠️ Detected stale battery data (expected: ${expectedValue}%, got: ${batteryData.level}%)`);
+      console.warn(`   Retrying in 500ms... (${maxRetries} retries left)`);
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return this.getBatteryWithRetry(sensorId, expectedValue, maxRetries - 1);
+    }
+    
+    return batteryData;
+  }
 }

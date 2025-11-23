@@ -331,33 +331,58 @@ const SensorMap = () => {
         
         // Xử lý tín hiệu mới từ sensor (auto reset pin nếu cần)
         console.log('📡 New sensor data received, handling signal...');
-        const newBatteryLevel = await BatteryService.handleNewSignal('hcm-device-01');
-        console.log('Battery after signal handling:', newBatteryLevel);
+        const signalResult = await BatteryService.handleNewSignal('hcm-device-01');
+        console.log('Battery after signal handling:', signalResult);
         
-        let batteryLevel = newBatteryLevel || 100; // Use signal result or default
+        let batteryLevel = signalResult || 100; // Use signal result or default
         
         // Nếu pin không phải 100% (không phải mới reset), tính toán decay
-        if (newBatteryLevel !== 100 && newBatteryLevel !== null) {
+        if (signalResult !== 100 && signalResult !== null) {
+          // 🔒 RACE CONDITION FIX: Đợi 500ms để Firebase sync xong
+          console.log('⏳ Waiting 500ms for Firebase to sync...');
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // 🔍 Đọc lại battery data sau khi đã sync
           const batteryData = await BatteryService.getBattery('hcm-device-01');
           
           if (batteryData && batteryData.level !== undefined) {
-            // Tính toán pin mới dựa trên thời gian đã trôi qua
-            const calculatedBattery = BatteryService.calculateBatteryLevel(
-              batteryData.timestamp, 
-              batteryData.level
-            );
+            // ✅ VERIFICATION: Check xem có lấy đúng giá trị không
+            const lastUpdatedTime = new Date(batteryData.lastUpdated || batteryData.timestamp);
+            const timeSinceUpdate = Date.now() - lastUpdatedTime.getTime();
             
-            console.log('Original battery:', batteryData.level);
-            console.log('Calculated battery after time:', calculatedBattery);
+            console.log('🔍 Battery verification:');
+            console.log('  - Battery level:', batteryData.level + '%');
+            console.log('  - Last updated:', lastUpdatedTime.toISOString());
+            console.log('  - Time since update:', timeSinceUpdate + 'ms');
+            console.log('  - Expected from signal:', signalResult + '%');
             
-            // Nếu pin đã thay đổi đáng kể (>= 1%), cập nhật lên Firebase
-            if (Math.abs(calculatedBattery - batteryData.level) >= 1) {
-              console.log(`Battery changed from ${batteryData.level}% to ${calculatedBattery}%`);
-              await BatteryService.updateBattery('hcm-device-01', calculatedBattery);
-              batteryLevel = calculatedBattery;
+            // ⚠️ WARNING: Nếu giá trị khác quá nhiều so với signal result
+            if (Math.abs(batteryData.level - signalResult) > 5) {
+              console.warn('⚠️ WARNING: Battery mismatch detected!');
+              console.warn('  - Signal result:', signalResult + '%');
+              console.warn('  - Firebase value:', batteryData.level + '%');
+              console.warn('  - Difference:', Math.abs(batteryData.level - signalResult) + '%');
+              console.warn('  → Using signal result to avoid stale data');
+              batteryLevel = signalResult;
             } else {
-              console.log('Battery change too small, keeping original value');
-              batteryLevel = batteryData.level;
+              // ✅ Giá trị đồng bộ OK, tính toán decay
+              const calculatedBattery = BatteryService.calculateBatteryLevel(
+                batteryData.timestamp, 
+                batteryData.level
+              );
+              
+              console.log('Original battery:', batteryData.level);
+              console.log('Calculated battery after time:', calculatedBattery);
+              
+              // Nếu pin đã thay đổi đáng kể (>= 1%), cập nhật lên Firebase
+              if (Math.abs(calculatedBattery - batteryData.level) >= 1) {
+                console.log(`Battery changed from ${batteryData.level}% to ${calculatedBattery}%`);
+                await BatteryService.updateBattery('hcm-device-01', calculatedBattery);
+                batteryLevel = calculatedBattery;
+              } else {
+                console.log('Battery change too small, keeping original value');
+                batteryLevel = batteryData.level;
+              }
             }
           }
         }
