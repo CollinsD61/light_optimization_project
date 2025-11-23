@@ -1,11 +1,7 @@
 name: Quality & Security Tests
 
-# Trigger khi update.yml hoàn thành hoặc chạy thủ công
+# Chỉ trigger thủ công (manual trigger only)
 on:
-  workflow_run:
-    workflows: ["Deploy to VPS"]
-    types:
-      - completed
   workflow_dispatch: # Cho phép chạy thủ công
     inputs:
       test_suite:
@@ -24,7 +20,6 @@ jobs:
   # SonarCloud - chạy riêng, không block các tests khác
   sonarcloud:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     continue-on-error: true # Không fail workflow nếu SonarCloud lỗi
 
     steps:
@@ -44,7 +39,6 @@ jobs:
   # Snyk Security Scans - chạy song song
   snyk-security:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
 
     steps:
       - name: Checkout code
@@ -108,7 +102,6 @@ jobs:
   # Trivy Security Scans - chạy song song với Snyk
   trivy-security:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
 
     steps:
       - name: Checkout code
@@ -144,7 +137,6 @@ jobs:
   playwright-tests:
     runs-on: ubuntu-latest
     # Chạy song song với security tests
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     outputs:
       test_total: ${{ steps.playwright.outputs.test_total }}
       test_passed: ${{ steps.playwright.outputs.test_passed }}
