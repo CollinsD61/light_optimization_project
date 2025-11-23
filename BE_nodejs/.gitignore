@@ -11,3 +11,6 @@ coverage/
 dist/
 build/
 
+
+# Firebase Service Account (PRIVATE KEY - NEVER COMMIT!)
+config/firebase-service-account.json
