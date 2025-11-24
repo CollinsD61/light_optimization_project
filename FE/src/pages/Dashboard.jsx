@@ -26,9 +26,15 @@ const Dashboard = () => {
         const start = new Date();
         start.setDate(end.getDate() - days);
         
-        setEndDate(end.toISOString().split('T')[0]);
-        setStartDate(start.toISOString().split('T')[0]);
+        const endStr = end.toISOString().split('T')[0];
+        const startStr = start.toISOString().split('T')[0];
+        
+        setEndDate(endStr);
+        setStartDate(startStr);
         setActiveQuickFilter(label);
+        
+        // Force reload immediately để user thấy kết quả ngay
+        console.log(`Quick filter: ${label} (${startStr} to ${endStr})`);
     };
 
     const clearFilters = () => {
@@ -48,6 +54,7 @@ const Dashboard = () => {
 
     const loadSensorData = async () => {
         setIsLoading(true);
+        console.log('[Dashboard] Loading sensor data with filters:', { startDate, endDate });
         try {
             const response = await fetchSensorData();
             const data = response.data;
@@ -67,6 +74,13 @@ const Dashboard = () => {
                 const startOK = start ? start <= ts : true;
                 const endOK = end ? ts <= end : true;
                 return startOK && endOK;
+            });
+            
+            console.log('[Dashboard] Filtered data:', {
+                totalRecords: data.length,
+                filteredRecords: filtered.length,
+                startDate,
+                endDate
             });
 
             const light = filtered.map(d => ({
@@ -108,7 +122,12 @@ const Dashboard = () => {
     };
 
     useEffect(() => {
-        loadSensorData();
+        // Debounce để tránh gọi API nhiều lần khi filter thay đổi
+        const timer = setTimeout(() => {
+            loadSensorData();
+        }, 300);
+        
+        return () => clearTimeout(timer);
     }, [startDate, endDate]);
 
     const exportToCSV = () => {

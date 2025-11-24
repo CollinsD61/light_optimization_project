@@ -9,7 +9,7 @@ const skipPlaywright = (req) => {
 // General API rate limiter
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 300, // Limit each IP to 300 requests per 15 minutes (was 100)
   skip: skipPlaywright, // Skip for Playwright tests
   message: {
     error: 'Too many requests from this IP, please try again later.',
@@ -22,7 +22,7 @@ const apiLimiter = rateLimit({
 // Strict limiter for authentication endpoints
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 login attempts per windowMs
+  max: 20, // Limit each IP to 20 login attempts per windowMs (was 5)
   skipSuccessfulRequests: true, // Don't count successful requests
   skip: skipPlaywright, // Skip for Playwright tests
   message: {
@@ -72,11 +72,25 @@ const registerLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Limiter for sensor data read endpoints (more relaxed)
+const sensorDataLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 30, // Limit each IP to 30 requests per minute
+  skip: skipPlaywright, // Skip for Playwright tests
+  message: {
+    error: 'Too many requests, please slow down.',
+    retryAfter: '1 minute'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 module.exports = {
   apiLimiter,
   authLimiter,
   iotLimiter,
   passwordResetLimiter,
-  registerLimiter
+  registerLimiter,
+  sensorDataLimiter
 };
 
