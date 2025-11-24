@@ -17,6 +17,7 @@ const Dashboard = () => {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
     const [hoveredChart, setHoveredChart] = useState(null);
     const [activeQuickFilter, setActiveQuickFilter] = useState(''); // New state for quick filters
 
@@ -130,32 +131,80 @@ const Dashboard = () => {
         return () => clearTimeout(timer);
     }, [startDate, endDate]);
 
-    const exportToCSV = () => {
-        if (!lightData.length && !tempData.length && !humidityData.length) {
-            alert("Không có dữ liệu để xuất!");
-            return;
-        }
+    const exportToCSV = async () => {
+        try {
+            setIsExporting(true);
+            console.log('[CSV Export] Bắt đầu tải toàn bộ dữ liệu...');
+            
+            // ✅ GỌI API LẤY FULL DỮ LIỆU (không filter)
+            const response = await fetchSensorData();
+            const fullData = response.data;
 
-        const merged = [];
-        const maxLength = Math.max(lightData.length, tempData.length, humidityData.length);
+            if (!fullData || fullData.length === 0) {
+                alert("Không có dữ liệu để xuất!");
+                return;
+            }
 
-        for (let i = 0; i < maxLength; i++) {
-            const rawTimestamp = lightData[i]?.timestamp || tempData[i]?.timestamp || humidityData[i]?.timestamp || '';
-            const formattedTimestamp = rawTimestamp
-                ? new Date(rawTimestamp).toLocaleString()
-                : '';
+            console.log(`[CSV Export] Đã tải ${fullData.length} bản ghi từ database`);
 
-            merged.push({
-                timestamp: formattedTimestamp,
-                light_value: lightData[i]?.value ?? '',
-                temperature: tempData[i]?.value ?? '',
-                humidity: humidityData[i]?.value ?? '',
+            // ✅ Tạo Map để merge dữ liệu theo timestamp
+            const dataMap = new Map();
+
+            fullData.forEach(record => {
+                const timestamp = record.timestamp;
+                if (!dataMap.has(timestamp)) {
+                    dataMap.set(timestamp, {
+                        timestamp: new Date(timestamp).toLocaleString('vi-VN'),
+                        light_value: '',
+                        temperature: '',
+                        humidity: ''
+                    });
+                }
+                
+                const entry = dataMap.get(timestamp);
+                if (record.light_value !== null && record.light_value !== undefined) {
+                    entry.light_value = record.light_value;
+                }
+                if (record.temperature !== null && record.temperature !== undefined) {
+                    entry.temperature = record.temperature;
+                }
+                if (record.humidity !== null && record.humidity !== undefined) {
+                    entry.humidity = record.humidity;
+                }
             });
-        }
 
-        const csv = Papa.unparse(merged);
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        saveAs(blob, `sensor_data_${new Date().toISOString().split('T')[0]}.csv`);
+            // ✅ Chuyển Map thành Array và sắp xếp theo thời gian (mới nhất -> cũ nhất)
+            const merged = Array.from(dataMap.values()).sort((a, b) => {
+                const dateA = new Date(a.timestamp.split(',').reverse().join());
+                const dateB = new Date(b.timestamp.split(',').reverse().join());
+                return dateB - dateA;
+            });
+
+            console.log(`[CSV Export] Đã merge thành ${merged.length} bản ghi duy nhất`);
+
+            // ✅ Tạo CSV với header tiếng Việt
+            const csvData = Papa.unparse(merged, {
+                columns: ['timestamp', 'light_value', 'temperature', 'humidity'],
+                header: true
+            });
+
+            // ✅ Thêm BOM để Excel hiển thị tiếng Việt đúng
+            const BOM = '\uFEFF';
+            const csvWithBOM = BOM + csvData;
+
+            // ✅ Tạo blob và download
+            const blob = new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8;' });
+            const filename = `sensor_data_full_${new Date().toISOString().split('T')[0]}_${new Date().getTime()}.csv`;
+            saveAs(blob, filename);
+
+            console.log(`[CSV Export] ✅ Đã xuất file: ${filename}`);
+            alert(`✅ Đã xuất ${merged.length} bản ghi thành công!\n📁 File: ${filename}`);
+        } catch (error) {
+            console.error('[CSV Export] ❌ Lỗi:', error);
+            alert('❌ Có lỗi xảy ra khi xuất dữ liệu. Vui lòng thử lại!');
+        } finally {
+            setIsExporting(false);
+        }
     };
 
     const getLatestValue = (data) => {
@@ -682,13 +731,28 @@ const Dashboard = () => {
                             <button
                                 onClick={exportToCSV}
                                 className="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                                disabled={isLoading || (!lightData.length && !tempData.length && !humidityData.length)}
+                                disabled={isLoading || isExporting}
+                                title="Tải toàn bộ dữ liệu từ database"
                             >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                </svg>
-                                <span>Tải CSV</span>
-                                <div className="w-2 h-2 bg-white/30 rounded-full animate-pulse"></div>
+                                {isExporting ? (
+                                    <>
+                                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span className="hidden sm:inline">Đang xuất...</span>
+                                        <span className="sm:hidden">Xuất...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        </svg>
+                                        <span className="hidden sm:inline">Tải Full CSV</span>
+                                        <span className="sm:hidden">CSV</span>
+                                        <div className="w-2 h-2 bg-white/30 rounded-full animate-pulse"></div>
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>
